@@ -11,6 +11,10 @@ PS3.5
 Explicit VR Little Endian
 Transfer Syntax
 PS3.5
+1.2.840.10008.1.2.1.98
+Encapsulated Uncompressed Explicit VR Little Endian
+Transfer Syntax
+PS3.5
 1.2.840.10008.1.2.1.99
 Deflated Explicit VR Little Endian
 Transfer Syntax
@@ -190,7 +194,7 @@ PS3.4
 1.2.840.10008.1.4.1.1
 Talairach Brain Atlas Frame of Reference
 Well-known frame of reference
-Talairach J. and Tournoux P. Co-Planar stereotactic atlas of the human brain. Stutgart: Georg Thieme Verlag, 1988.
+Talairach J. and Tournoux P. Co-Planar stereotactic atlas of the human brain. Stuttgart: Georg Thieme Verlag, 1988.
 1.2.840.10008.1.4.1.2
 SPM2 T1 Frame of Reference
 Well-known frame of reference
@@ -273,6 +277,26 @@ Well-known frame of reference
 PS 3.3
 1.2.840.10008.1.4.3.2
 Standard Robotic-Arm Coordinate System Frame of Reference
+Well-known frame of reference
+PS 3.3
+1.2.840.10008.1.4.4.1
+SRI24 Frame of Reference
+Well-known frame of reference
+PS 3.3
+1.2.840.10008.1.4.5.1
+Colin27 Frame of Reference
+Well-known frame of reference
+PS 3.3
+1.2.840.10008.1.4.6.1
+LPBA40/AIR Frame of Reference
+Well-known frame of reference
+PS 3.3
+1.2.840.10008.1.4.6.2
+LPBA40/FLIRT Frame of Reference
+Well-known frame of reference
+PS 3.3
+1.2.840.10008.1.4.6.3
+LPBA40/SPM5 Frame of Reference
 Well-known frame of reference
 PS 3.3
 1.2.840.10008.1.5.1
@@ -396,6 +420,10 @@ Coding Scheme
 PS3.16
 1.2.840.10008.2.16.15
 RadElement
+Coding Scheme
+PS3.16
+1.2.840.10008.2.16.16
+ICD-11
 Coding Scheme
 PS3.16
 1.2.840.10008.3.1.1.1
@@ -722,6 +750,30 @@ PS3.4
 Respiratory Waveform Storage
 SOP Class
 PS3.4
+1.2.840.10008.5.1.4.1.1.9.6.2
+Multi-channel Respiratory Waveform Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.9.7.1
+Routine Scalp Electroencephalogram Waveform Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.9.7.2
+Electromyogram Waveform Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.9.7.3
+Electrooculogram Waveform Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.9.7.4
+Sleep Electroencephalogram Waveform Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.9.8.1
+Body Position Waveform Storage
+SOP Class
+PS3.4
 1.2.840.10008.5.1.4.1.1.10
 Standalone Modality LUT Storage (Retired)
 SOP Class
@@ -950,6 +1002,10 @@ PS3.4
 VL Whole Slide Microscopy Image Storage
 SOP Class
 PS3.4
+1.2.840.10008.5.1.4.1.1.77.1.7
+Dermoscopic Photography Image Storage
+SOP Class
+PS3.4
 1.2.840.10008.5.1.4.1.1.78.1
 Lensometry Measurements Storage
 SOP Class
@@ -1083,11 +1139,19 @@ Planned Imaging Agent Administration SR Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.88.75
-Performed Imaging Agent Administrator SR Storage
+Performed Imaging Agent Administration SR Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.88.76
+Enhanced X-Ray Radiation Dose SR Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.90.1
 Content Assessment Results Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.91.1
+Microscopy Bulk Simple Annotations Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.104.1
@@ -1154,6 +1218,14 @@ PS3.4
 Protocol Approval Information Model - GET
 SOP Class
 PS3.4
+1.2.840.10008.5.1.4.1.1.200.7
+XA Defined Procedure Protocol Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.200.8
+XA Performed Procedure Protocol Storage
+SOP Class
+PS3.4
 1.2.840.10008.5.1.4.1.1.481.1
 RT Image Storage
 SOP Class
@@ -1212,6 +1284,26 @@ SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.481.15
 Robotic-Arm Radiation Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.16
+RT Radiation Record Set Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.17
+RT Radiation Salvage Record Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.18
+Tomotherapeutic Radiation Record Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.19
+C-Arm Photon-Electron Radiation Record Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.20
+Robotic Radiation Record Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.501.1
@@ -1394,6 +1486,10 @@ PS3.4
 Unified Procedure Step - Event SOP Class
 SOP Class
 PS3.4
+1.2.840.10008.5.1.4.34.6.5
+Unified Procedure Step - Query SOP Class
+SOP Class
+PS3.4
 1.2.840.10008.5.1.4.34.7
 RT Beams Delivery Instruction Storage
 SOP Class
@@ -1522,22 +1618,6 @@ PS3.19
 DICOM Content Mapping Resource
 Mapping Resource
 PS3.16
-1.2.840.10008.10.1
-Video Endoscopic Image Real-Time Communication
-SOP Class
-PS3.22
-1.2.840.10008.10.2
-Video Photographic Image Real-Time Communication
-SOP Class
-PS3.22
-1.2.840.10008.10.3
-Audio Waveform Real-Time Communication
-SOP Class
-PS3.22
-1.2.840.10008.10.4
-Rendition Selection Document Real-Time Communication
-SOP Class
-PS3.22
 1.2.840.10008.9.1
 Imaging Report
 Document TemplateID
@@ -1634,6 +1714,22 @@ PS3.20
 Imaging Addendum Report
 Document TemplateID
 PS3.20
+1.2.840.10008.10.1
+Video Endoscopic Image Real-Time Communication
+SOP Class
+PS3.22
+1.2.840.10008.10.2
+Video Photographic Image Real-Time Communication
+SOP Class
+PS3.22
+1.2.840.10008.10.3
+Audio Waveform Real-Time Communication
+SOP Class
+PS3.22
+1.2.840.10008.10.4
+Rendition Selection Document Real-Time Communication
+SOP Class
+PS3.22
 1.2.840.10008.15.0.3.1
 dicomDeviceName
 LDAP OID
@@ -1797,7 +1893,7 @@ PS3.3
 # Frames of Reference ================================================
 1.2.840.10008.1.4.1.1
 Talairach Brain Atlas Frame of Reference
-Talairach J. and Tournoux P. Co-Planar stereotactic atlas of the human brain. Stutgart: Georg Thieme Verlag, 1988.
+Talairach J. and Tournoux P. Co-Planar stereotactic atlas of the human brain. Stuttgart: Georg Thieme Verlag, 1988.
 1.2.840.10008.1.4.1.2
 SPM2 T1 Frame of Reference
 SPM2 /templates/T1.mnc
@@ -1861,6 +1957,21 @@ Fixed coordinate system of Section C.36.12.2.1 “IEC 61217 Fixed Reference Syst
 1.2.840.10008.1.4.3.2
 Standard Robotic-Arm Coordinate System Frame of Reference
 See Section C.36.12.2.2 “Standard Robotic-Arm Coordinate System Frame of Reference” in PS3.3.
+1.2.840.10008.1.4.4.1
+SRI24 Frame of Reference
+http://www.nitrc.org/projects/sri24/
+1.2.840.10008.1.4.5.1
+Colin27 Frame of Reference
+http://www.bic.mni.mcgill.ca/ServicesAtlases/Colin27
+1.2.840.10008.1.4.6.1
+LPBA40/AIR Frame of Reference
+http://resource.loni.usc.edu/atlasfiles/LPBA40_AIR_Atlas_NIFTI_format.zip
+1.2.840.10008.1.4.6.2
+LPBA40/FLIRT Frame of Reference
+http://resource.loni.usc.edu/atlasfiles/LPBA40_FLIRT_Atlas_NIFTI_format.zip
+1.2.840.10008.1.4.6.3
+LPBA40/SPM5 Frame of Reference
+http://resource.loni.usc.edu/atlasfiles/LPBA40_SPM5_atlas_NIFTI_format.zip
 # Context Group UID Values ================================================
 1.2.840.10008.6.1.1
 CID 2
@@ -4080,6 +4191,8 @@ Cardiac Ultrasound Hemodynamic Measurements
 CID 12255
 Cardiac Ultrasound Myocardium Measurements
 1.2.840.10008.6.1.837
+
+
 1.2.840.10008.6.1.838
 CID 12257
 Cardiac Ultrasound Left Ventricle
@@ -5505,3 +5618,327 @@ Parts of Organs (Non-Lateralized)
 1.2.840.10008.6.1.1317
 CID 12131
 Parts of Organs (Lateralized)
+1.2.840.10008.6.1.1318
+CID 9561
+Treatment Termination Reasons
+1.2.840.10008.6.1.1319
+CID 9562
+Radiotherapy Treatment Delivery Person Roles
+1.2.840.10008.6.1.1320
+CID 9563
+Interlock Resolutions
+1.2.840.10008.6.1.1321
+CID 9564
+Treatment Session Confirmation Assertions
+1.2.840.10008.6.1.1322
+CID 9565
+Treatment Tolerance Violation Causes
+1.2.840.10008.6.1.1323
+CID 9566
+Clinical Tolerance Violation Types
+1.2.840.10008.6.1.1324
+CID 9567
+Machine Tolerance Violation Types
+1.2.840.10008.6.1.1325
+CID 9568
+Treatment Interlocks
+1.2.840.10008.6.1.1326
+CID 9569
+Isocentric Patient Support Position Parameters
+1.2.840.10008.6.1.1327
+CID 9570
+RT Overridden Treatment Parameters
+1.2.840.10008.6.1.1328
+CID 3030
+EEG Leads
+1.2.840.10008.6.1.1329
+CID 3031
+Lead locations near or in muscles
+1.2.840.10008.6.1.1330
+CID 3032
+Lead locations near peripheral nerves
+1.2.840.10008.6.1.1331
+CID 3033
+EOG Leads
+1.2.840.10008.6.1.1332
+CID 3034
+Body Position Channels
+1.2.840.10008.6.1.1333
+CID 3035
+EEG Annotations – Neurophysiologic Enumerations (EEG)
+1.2.840.10008.6.1.1334
+CID 3036
+EMG Annotations – Neurophysiological Enumerations (EMG)
+1.2.840.10008.6.1.1335
+CID 3037
+EOG Annotations – Neurophysiological Enumerations (EOG)
+1.2.840.10008.6.1.1336
+CID 3038
+Pattern Events
+1.2.840.10008.6.1.1337
+CID 3039
+Device-related and Environment-related Events
+1.2.840.10008.6.1.1338
+CID 3040
+EEG Annotations - Neurological Monitoring Measurements
+1.2.840.10008.6.1.1339
+CID 12024
+OB-GYN Ultrasound Report Document Titles
+1.2.840.10008.6.1.1340
+CID 7230
+Automation of Measurement
+1.2.840.10008.6.1.1341
+CID 12025
+OB-GYN Ultrasound Beam Path
+1.2.840.10008.6.1.1342
+CID 7550
+Angle Measurements
+1.2.840.10008.6.1.1343
+CID 7551
+Generic Purpose of Reference to Images and Coordinates in Measurements
+1.2.840.10008.6.1.1344
+CID 7552
+Generic Purpose of Reference to Images in Measurements
+1.2.840.10008.6.1.1345
+CID 7553
+Generic Purpose of Reference to Coordinates in Measurements
+1.2.840.10008.6.1.1346
+CID 4401
+Fitzpatrick Skin Type
+1.2.840.10008.6.1.1347
+CID 4402
+History of Malignant Melanoma
+1.2.840.10008.6.1.1348
+CID 4403
+History of Melanoma in Situ
+1.2.840.10008.6.1.1349
+CID 4404
+History of Non-Melanoma Skin Cancer
+1.2.840.10008.6.1.1350
+CID 4405
+History of Non-Melanoma Skin Cancer
+1.2.840.10008.6.1.1351
+CID 4406
+Patient Reported Lesion Characteristics
+1.2.840.10008.6.1.1352
+CID 4407
+Lesion Palpation Findings
+1.2.840.10008.6.1.1353
+CID 4408
+Lesion Visual Findings
+1.2.840.10008.6.1.1354
+CID 4409
+Lesion Visual Findings
+1.2.840.10008.6.1.1355
+CID 12125
+Abdominopelvic Vessels
+1.2.840.10008.6.1.1356
+CID 43
+Numeric Value Failure Qualifier
+1.2.840.10008.6.1.1357
+CID 44
+Numeric Value Unknown Qualifier
+1.2.840.10008.6.1.1358
+CID 7170
+Couinaud Liver Segments
+1.2.840.10008.6.1.1359
+CID 7171
+Liver Segmentation Types
+1.2.840.10008.6.1.1360
+CID 1201
+Contraindications For XA Imaging
+1.2.840.10008.6.1.1361
+CID 3041
+Neurophysiologic Stimulation Modes
+1.2.840.10008.6.1.1362
+CID 10072
+Reported Value Types
+1.2.840.10008.6.1.1363
+CID 10073
+Value Timings
+1.2.840.10008.6.1.1364
+CID 10074
+RDSR Frame of Reference Origins
+1.2.840.10008.6.1.1365
+CID 8135
+Microscopy Annotation Property Types
+1.2.840.10008.6.1.1366
+CID 8136
+Microscopy Measurement Types
+1.2.840.10008.6.1.1367
+CID 6310
+Prostate Reporting Systems
+1.2.840.10008.6.1.1368
+CID 6311
+MR Signal Intensity
+1.2.840.10008.6.1.1369
+CID 6312
+Cross-sectional Scan Plane Orientation
+1.2.840.10008.6.1.1370
+CID 6313
+History of Prostate Disease
+1.2.840.10008.6.1.1371
+CID 6314
+Prostate MRI Study Quality Findings
+1.2.840.10008.6.1.1372
+CID 6315
+Prostate MRI Series Quality Findings
+1.2.840.10008.6.1.1373
+CID 6316
+MR Imaging Artifacts
+1.2.840.10008.6.1.1374
+CID 6317
+Prostate DCE MRI Quality Findings
+1.2.840.10008.6.1.1375
+CID 6318
+Prostate DWI MRI Quality Findings
+1.2.840.10008.6.1.1376
+CID 6319
+Abdominal Intervention Types
+1.2.840.10008.6.1.1377
+CID 6320
+Abdominal Interventions
+1.2.840.10008.6.1.1378
+CID 6321
+Prostate Cancer Diagnostic Procedures
+1.2.840.10008.6.1.1379
+CID 6322
+Prostate Cancer Family History
+1.2.840.10008.6.1.1380
+CID 6323
+Prostate Cancer Therapy
+1.2.840.10008.6.1.1381
+CID 6324
+Prostate MRI Assessment
+1.2.840.10008.6.1.1382
+CID 6325
+Overall Assessment from PI-RADS(R)
+1.2.840.10008.6.1.1383
+CID 6326
+Image Quality Control Standards
+1.2.840.10008.6.1.1384
+CID 6327
+Prostate Imaging Indications
+1.2.840.10008.6.1.1385
+CID 6328
+PI-RADS(R) v2 Lesion Assessment Category
+1.2.840.10008.6.1.1386
+CID 6329
+PI-RADS(R) v2 T2WI TZ Lesion Assessment Category
+1.2.840.10008.6.1.1387
+CID 6330
+PI-RADS(R) v2 T2WI PZ Lesion Assessment Category
+1.2.840.10008.6.1.1388
+CID 6331
+PI-RADS(R) v2 DWI Lesion Assessment Category
+1.2.840.10008.6.1.1389
+CID 6332
+PI-RADS(R) v2 DCE Lesion Assessment Category
+1.2.840.10008.6.1.1390
+CID 6333
+mpMRI Assessment Types
+1.2.840.10008.6.1.1391
+CID 6334
+mpMRI Assessment Types from PI-RADS(R)
+1.2.840.10008.6.1.1392
+CID 6335
+mpMRI Assessment Values
+1.2.840.10008.6.1.1393
+CID 6336
+MRI Abnormalities
+1.2.840.10008.6.1.1394
+CID 6337
+mpMRI Prostate Abnormalities from PI-RADS(R)
+1.2.840.10008.6.1.1395
+CID 6338
+mpMRI Benign Prostate Abnormalities from PI-RADS(R)
+1.2.840.10008.6.1.1396
+CID 6339
+MRI Shape Characteristics
+1.2.840.10008.6.1.1397
+CID 6340
+Prostate MRI Shape Characteristics from PI-RADS(R)
+1.2.840.10008.6.1.1398
+CID 6341
+MRI Margin Characteristics
+1.2.840.10008.6.1.1399
+CID 6342
+Prostate MRI Margin Characteristics from PI-RADS(R)
+1.2.840.10008.6.1.1400
+CID 6343
+MRI Signal Characteristics
+1.2.840.10008.6.1.1401
+CID 6344
+Prostate MRI Signal Characteristics from PI-RADS(R)
+1.2.840.10008.6.1.1402
+CID 6345
+MRI Enhancement Patterns
+1.2.840.10008.6.1.1403
+CID 6346
+Prostate MRI Enhancement Patterns from PI-RADS(R)
+1.2.840.10008.6.1.1404
+CID 6347
+Prostate MRI Extra-prostatic Findings
+1.2.840.10008.6.1.1405
+CID 6348
+Prostate MRI Assessment of Extra-prostatic Anatomic Sites
+1.2.840.10008.6.1.1406
+CID 6349
+MR Coil Types
+1.2.840.10008.6.1.1407
+CID 6350
+Endorectal Coil Fill Substances
+1.2.840.10008.6.1.1408
+CID 6351
+Prostate Relational Measurements
+1.2.840.10008.6.1.1409
+CID 6352
+Prostate Cancer Diagnostic Blood Lab Measurements
+1.2.840.10008.6.1.1410
+CID 6353
+Prostate Imaging Types of Quality Control Standard
+1.2.840.10008.6.1.1411
+CID 12308
+Ultrasound Shear Wave Measurements
+1.2.840.10008.6.1.1412
+CID 3780
+Left Ventricle Myocardial Wall 16 Segments
+1.2.840.10008.6.1.1413
+CID 3781
+Left Ventricle Myocardial Wall 18 Segments
+1.2.840.10008.6.1.1414
+CID 3782
+Left Ventricle Basal Wall 6 Segments
+1.2.840.10008.6.1.1415
+CID 3783
+Left Ventricle Midlevel Wall 6 Segments
+1.2.840.10008.6.1.1416
+CID 3784
+Left Ventricle Apical Wall 4 Segments
+1.2.840.10008.6.1.1417
+CID 3785
+Left Ventricle Apical Wall 6 Segments
+1.2.840.10008.6.1.1418
+CID 9571
+Patient Treatment Preparation Methods
+1.2.840.10008.6.1.1419
+CID 9572
+Patient Shielding Devices
+1.2.840.10008.6.1.1420
+CID 9573
+Patient Treaqtment Preparation Devices
+1.2.840.10008.6.1.1421
+CID 9574
+Patient Position Displacement Reference Points
+1.2.840.10008.6.1.1422
+CID 9575
+Patient Alignment Devices
+1.2.840.10008.6.1.1423
+CID 9576
+Reasons for RT Radiation Treatment Omission
+1.2.840.10008.6.1.1424
+CID 9577
+Patient Treatment Preparation Methods
+1.2.840.10008.6.1.1425
+CID 9578
+Motion Management Setup Devices

@@ -632,53 +632,63 @@ void vtkDICOMValue::CreateValue(vtkDICOMVR vr, const T *data, size_t n)
   }
   else if (vr == VR::OW)
   {
+    const size_t s = 2;
+    size_t m = n*sizeof(T)/s;
     if (vt == VTK_SHORT)
     {
-      short *ptr = this->AllocateShortData(vr, n);
-      memcpy(ptr, data, n*2);
+      short *ptr = this->AllocateShortData(vr, m);
+      memcpy(ptr, data, m*s);
     }
     else
     {
-      unsigned short *ptr = this->AllocateUnsignedShortData(vr, n*sizeof(T)/2);
-      memcpy(ptr, data, n*sizeof(T));
+      unsigned short *ptr = this->AllocateUnsignedShortData(vr, m);
+      memcpy(ptr, data, m*s);
     }
   }
   else if (vr == VR::OL)
   {
+    const size_t s = 4;
+    size_t m = n*sizeof(T)/s;
     if (vt == VTK_INT)
     {
-      int *ptr = this->AllocateIntData(vr, n);
-      memcpy(ptr, data, n*4);
+      int *ptr = this->AllocateIntData(vr, m);
+      memcpy(ptr, data, m*s);
     }
     else
     {
-      unsigned int *ptr = this->AllocateUnsignedIntData(vr, n*sizeof(T)/4);
-      memcpy(ptr, data, n*sizeof(T));
+      unsigned int *ptr = this->AllocateUnsignedIntData(vr, m);
+      memcpy(ptr, data, m*s);
     }
   }
   else if (vr == VR::OV)
   {
+    const size_t s = 8;
+    size_t m = n*sizeof(T)/s;
     if (vt == VTK_LONG_LONG)
     {
-      long long *ptr = this->AllocateInt64Data(vr, n);
-      memcpy(ptr, data, n*4);
+      long long *ptr = this->AllocateInt64Data(vr, m);
+      memcpy(ptr, data, m*s);
     }
     else
     {
       unsigned long long *ptr =
-        this->AllocateUnsignedInt64Data(vr, n*sizeof(T)/4);
-      memcpy(ptr, data, n*sizeof(T));
+        this->AllocateUnsignedInt64Data(vr, m);
+      memcpy(ptr, data, m*s);
     }
   }
   else if (vr == VR::OF)
   {
-    float *ptr = this->AllocateFloatData(vr, n*sizeof(T)/4);
-    memcpy(ptr, data, n*sizeof(T));
+    const size_t s = 4;
+    size_t m = n*sizeof(T)/s;
+    float *ptr = this->AllocateFloatData(vr, m);
+    memcpy(ptr, data, m*s);
   }
   else if (vr == VR::OD)
   {
-    double *ptr = this->AllocateDoubleData(vr, n*sizeof(T)/8);
-    memcpy(ptr, data, n*sizeof(T));
+    const size_t s = 8;
+    size_t m = n*sizeof(T)/s;
+    double *ptr = this->AllocateDoubleData(vr, m);
+    memcpy(ptr, data, m*s);
   }
   else if (vr == VR::AT)
   {
@@ -771,28 +781,33 @@ void vtkDICOMValue::CreateValue<char>(
   }
   else if (vr == VR::OW)
   {
-    unsigned short *ptr = this->AllocateUnsignedShortData(vr, m/2);
-    memcpy(ptr, data, m);
+    size_t n = m/2;
+    unsigned short *ptr = this->AllocateUnsignedShortData(vr, n);
+    memcpy(ptr, data, n*2);
   }
   else if (vr == VR::OL)
   {
-    unsigned int *ptr = this->AllocateUnsignedIntData(vr, m/4);
-    memcpy(ptr, data, m);
+    size_t n = m/4;
+    unsigned int *ptr = this->AllocateUnsignedIntData(vr, n);
+    memcpy(ptr, data, n*4);
   }
   else if (vr == VR::OV)
   {
-    unsigned long long *ptr = this->AllocateUnsignedInt64Data(vr, m/4);
-    memcpy(ptr, data, m);
+    size_t n = m/8;
+    unsigned long long *ptr = this->AllocateUnsignedInt64Data(vr, n);
+    memcpy(ptr, data, n*8);
   }
   else if (vr == VR::OF)
   {
-    float *ptr = this->AllocateFloatData(vr, m/4);
-    memcpy(ptr, data, m);
+    size_t n = m/4;
+    float *ptr = this->AllocateFloatData(vr, n);
+    memcpy(ptr, data, n*4);
   }
   else if (vr == VR::OD)
   {
-    double *ptr = this->AllocateDoubleData(vr, m/8);
-    memcpy(ptr, data, m);
+    size_t n = m/8;
+    double *ptr = this->AllocateDoubleData(vr, n);
+    memcpy(ptr, data, n*8);
   }
   else if (vr == VR::UN || vr == VR::OB || vr == VR::OX)
   {
@@ -1534,13 +1549,12 @@ void vtkDICOMValue::GetValuesT(VT *v, size_t c, size_t s) const
     {
       const vtkDICOMTag *tptr =
         static_cast<const ValueT<vtkDICOMTag> *>(this->V)->Data + s;
-      for (size_t i = 0; i < c; i += 2)
+      for (size_t i = 0; i < c; i++)
       {
-        v[i] = tptr[i/2].GetGroup();
-        v[i+1] = tptr[i/2].GetElement();
+        v[i] = ((i%2) == 0 ? tptr[i/2].GetGroup() : tptr[i/2].GetElement());
       }
-    }
       break;
+    }
   }
 }
 

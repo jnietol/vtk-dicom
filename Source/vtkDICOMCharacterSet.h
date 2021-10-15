@@ -23,24 +23,20 @@
 //! Character sets.
 /*!
  *  This class provides the means to convert the various international
- *  text encodings used by DICOM to the popular UTF-8 encoding.  It does
- *  not at this time provide the means to convert to any encoding other
- *  than UTF-8.
+ *  text encodings used by DICOM to UTF-8 and back again.
  *
- *  During conversion to UTF-8, any codes in the original encoding that
- *  cannot be converted to Unicode are replaced by "REPLACEMENT CHARACTER",
+ *  During conversion to UTF-8, any codes the original encoding that
+ *  can't be converted are replaced by Unicode's "REPLACEMENT CHARACTER",
  *  which is a question mark in a black diamond.  For instance, if the
- *  original encoding is ISO_IR_6, any octets with the 8th bit set will
- *  be replaced.
+ *  original encoding is ISO_IR_6 (ASCII), any octets outside of the
+ *  valid ASCII range of 0 to 127 will become "REPLACEMENT CHARACTER".
  *
  *  DICOM supports a fairly small number of single-byte and multi-byte
  *  character sets.  The only VRs that support these character sets are
  *  PN, LO, SH, ST, LT, and ST (all other text VRs must be ASCII). In
- *  total, there is one 7-bit encoding (ASCII), eleven 8-bit single-byte
- *  encodings, three variable-length encodings (UTF-8, GB18030, GBK), and
- *  three iso-2022 multi-byte encodings.  It is possible to use iso-2022
- *  escape codes to switch between most of the encodings, with UTF-8 and
- *  GB18030/GBK as the most noteworthy exceptions.
+ *  addition to ASCII, there are eleven 8-bit single-byte encodings,
+ *  three iso-2022 multi-byte encodings, and three variable-length
+ *  encodings (UTF-8, GB18030, GBK).
  *
  *  In some DICOM data sets, especially old ones, the SpecificCharacterSet
  *  attribute will be missing and it might be necessary to manually specify
@@ -248,7 +244,7 @@ public:
    *  switch between character sets.
    */
   bool IsISO2022() const {
-    return ((this->Key & (ISO_2022 + ISO_2022 - 1)) == (this->Key | ISO_2022));
+    return ((this->Key & ISO_2022_MAX) == (this->Key | ISO_2022));
   }
 
   //! Returns true if this uses an ISO 8859 code page.
@@ -297,6 +293,51 @@ public:
   //@}
 
 private:
+
+  // ISO-2022 Escape Codes
+  enum EscapeType {
+    CODE_ACS,  // Announcer Code Sequence
+    CODE_CZD,  // C0 Designate
+    CODE_C1D,  // C1 Designate
+    CODE_GZD,  // G0 Designate
+    CODE_G1D,  // G1 Designate
+    CODE_G2D,  // G2 Designate
+    CODE_G3D,  // G3 Designate
+    CODE_DOCS, // Designate Other Coding System
+    CODE_CMD,  // Coding Method Delimiter
+    CODE_IRR,  // Identify Revised Registration
+    CODE_SS2,  // Single Shift Two
+    CODE_SS3,  // Single Shift Three
+    CODE_LS2,  // Locking Shift Two
+    CODE_LS3,  // Locking Shift Three
+    CODE_LS1R, // Locking Shift One Right
+    CODE_LS2R, // Locking Shift Two Right
+    CODE_LS3R,  // Locking Shift Three Right
+    CODE_OTHER = 254, // Unrecognized
+    CODE_ERROR = 255 // Failure indicator
+  };
+
+  // ISO-2022 State Bitfield
+  enum StateType {
+    ALTERNATE_CS = 0x00FF,
+    MULTIBYTE_G0 = 0x0100,
+    MULTIBYTE_G1 = 0x0200,
+    MULTIBYTE_G2 = 0x0400,
+    MULTIBYTE_G3 = 0x0800,
+    CHARSET96_GX = 0x1000,
+    CHARSET96_G1 = 0x2000,
+    CHARSET96_G2 = 0x4000,
+    CHARSET96_G3 = 0x8000
+  };
+
+  // Other ISO-2022
+  enum {
+    ISO_2022_JP_BASE = 7,
+    ISO_2022_BASE = 31,
+    ISO_2022 = 32,
+    ISO_2022_MAX = 63
+  };
+
   size_t AnyToUTF8(const char *t, size_t l, std::string *s, int m) const;
   size_t UTF8ToSingleByte(const char *t, size_t l, std::string *s) const;
   size_t SingleByteToUTF8(const char *t, size_t l, std::string *s, int m) const;
@@ -321,20 +362,17 @@ private:
     int charset, const char *t, size_t l, std::string *s);
   static size_t JISXToUTF8(
     int csGL, int csGR, const char *t, size_t l, std::string *s, int m);
+
+  static unsigned int InitISO2022(unsigned char key, unsigned char G[4]);
+  static EscapeType EscapeCode(const char *cp, size_t l, unsigned int *state);
+  static unsigned char CharacterSetFromEscapeCode(const char *code, size_t l);
   static unsigned char KeyFromString(const char *name, size_t nl);
 
   unsigned char Key;
 
-  enum {
-    ISO_2022_JP_BASE = 7,
-    ISO_2022_BASE = 31,
-    ISO_2022 = 32
-  };
-
   static unsigned char GlobalDefault;
   static bool GlobalOverride;
 
-public:
   static const unsigned short *Table[256];
   static const unsigned short *Reverse[256];
 };
