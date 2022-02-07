@@ -279,6 +279,10 @@ PS 3.3
 Standard Robotic-Arm Coordinate System Frame of Reference
 Well-known frame of reference
 PS 3.3
+1.2.840.10008.1.4.3.3
+IEC 61217 Table Top Coordinate System Frame of Reference
+Well-known frame of reference
+PS 3.3
 1.2.840.10008.1.4.4.1
 SRI24 Frame of Reference
 Well-known frame of reference
@@ -424,6 +428,14 @@ Coding Scheme
 PS3.16
 1.2.840.10008.2.16.16
 ICD-11
+Coding Scheme
+PS3.16
+1.2.840.10008.2.16.17
+Unified numbering system (UNS) for metals and alloys
+Coding Scheme
+PS3.16
+1.2.840.10008.2.16.18
+Research Resource Identification
 Coding Scheme
 PS3.16
 1.2.840.10008.3.1.1.1
@@ -1953,10 +1965,13 @@ ICBM Single Subject MRI Frame of Reference
 ICBM Single Subject MRI Anatomical Template
 1.2.840.10008.1.4.3.1
 IEC 61217 Fixed Coordinate System Frame of Reference
-Fixed coordinate system of Section C.36.12.2.1 “IEC 61217 Fixed Reference System Frame of Reference” in PS3.3
+Fixed coordinate system of Section C.36.12.2.1 "IEC 61217 Fixed Reference System Frame of Reference" in PS3.3
 1.2.840.10008.1.4.3.2
 Standard Robotic-Arm Coordinate System Frame of Reference
-See Section C.36.12.2.2 “Standard Robotic-Arm Coordinate System Frame of Reference” in PS3.3.
+See Section C.36.12.2.2 "Standard Robotic-Arm Coordinate System Frame of Reference" in PS3.3.
+1.2.840.10008.1.4.3.3
+IEC 61217 Table Top Coordinate System Frame of Reference
+Table top coordinate system ("t") of [IEC 61217].
 1.2.840.10008.1.4.4.1
 SRI24 Frame of Reference
 http://www.nitrc.org/projects/sri24/
@@ -5665,13 +5680,13 @@ CID 3034
 Body Position Channels
 1.2.840.10008.6.1.1333
 CID 3035
-EEG Annotations – Neurophysiologic Enumerations (EEG)
+EEG Annotations - Neurophysiologic Enumerations (EEG)
 1.2.840.10008.6.1.1334
 CID 3036
-EMG Annotations – Neurophysiological Enumerations (EMG)
+EMG Annotations - Neurophysiological Enumerations (EMG)
 1.2.840.10008.6.1.1335
 CID 3037
-EOG Annotations – Neurophysiological Enumerations (EOG)
+EOG Annotations - Neurophysiological Enumerations (EOG)
 1.2.840.10008.6.1.1336
 CID 3038
 Pattern Events
@@ -5942,3 +5957,51 @@ Patient Treatment Preparation Methods
 1.2.840.10008.6.1.1425
 CID 9578
 Motion Management Setup Devices
+1.2.840.10008.6.1.1426
+CID 12309
+Core Echo Strain Measurements
+1.2.840.10008.6.1.1427
+CID 12310
+Myocardial Strain Methods
+1.2.840.10008.6.1.1428
+CID 12311
+Echo Measured Strain Properties
+1.2.840.10008.6.1.1429
+CID 3020
+Assessment from CAD-RADS(TM)
+1.2.840.10008.6.1.1430
+CID 3021
+CAD-RADS(TM) Stenosis Assessment Modifier
+1.2.840.10008.6.1.1431
+CID 3022
+CAD-RADS(TM) Assessment Modifier
+1.2.840.10008.6.1.1432
+CID 9579
+RT Segment Materials
+1.2.840.10008.6.1.1433
+CID 7602
+Vertebral Anatomic Structures
+1.2.840.10008.6.1.1434
+CID 7603
+Vertebrae
+1.2.840.10008.6.1.1435
+CID 7604
+Intervertebral Discs
+1.2.840.10008.6.1.1436
+CID 101
+Imaging Procedures
+1.2.840.10008.6.1.1437
+CID 103
+NICIP Short Codes for Imaging Procedures
+1.2.840.10008.6.1.1438
+CID 104
+NICIP SNOMED Subset of Imaging Procedures
+1.2.840.10008.6.1.1439
+CID 105
+ICD-10-PCS Imaging Procedures
+1.2.840.10008.6.1.1440
+CID 106
+ICD-10-PCS Nuclear Medicine Procedures
+1.2.840.10008.6.1.1441
+CID 107
+ICD-10-PCS Radiation Therapy Procedures
