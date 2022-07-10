@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2019 David Gobbi
+  Copyright (c) 2012-2022 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -1664,6 +1664,22 @@ std::string DecompressUID(const std::string& s)
   return std::string(uid, m);
 }
 
+// Clean up an Osirix UID
+std::string CleanUID(const std::string& s)
+{
+  // Remove any text before the UID
+  size_t k = 0;
+  while (k < s.length() && (s[k] <= '0' || s[k] >= '9'))
+  {
+    k++;
+  }
+  if (k > 0)
+  {
+    return s.substr(k, s.length()-k);
+  }
+  return s;
+}
+
 // A class to simplify SQLite transaction
 class SimpleSQL
 {
@@ -1918,6 +1934,7 @@ void vtkDICOMDirectory::ProcessOsirixDatabase(const char *fname)
     {
       row->col[k] = dbase.GetValue(k);
     }
+    // SE_NCOLS gives ZSTUDY, for mapping series to study
     zseriesVec.push_back(dbase.GetValue(SE_NCOLS).ToTypeInt64());
   }
 
@@ -1942,6 +1959,7 @@ void vtkDICOMDirectory::ProcessOsirixDatabase(const char *fname)
     {
       row->col[k] = dbase.GetValue(k);
     }
+    // IM_NCOLS gives ZSERIES, for mapping image to series
     zimageVec.push_back(dbase.GetValue(IM_NCOLS).ToTypeInt64());
   }
 
@@ -2045,14 +2063,13 @@ void vtkDICOMDirectory::ProcessOsirixDatabase(const char *fname)
 
     // Go through all of the series in the study
     for (std::vector<SeriesRow>::iterator se = seriesTable.begin() + seIdx;
-         se != seriesTable.end(); ++se)
+         se != seriesTable.end(); ++se, ++zseriesVecIter)
     {
       // Break when we find a series that isn't part of the study
-      if (*zseriesVecIter > zstudy)
+      if (*zseriesVecIter != zstudy)
       {
         break;
       }
-      ++zseriesVecIter;
 
       if (this->RequirePixelData &&
           se->col[SE_NUMBEROFIMAGES].ToTypeInt64() == 0)
@@ -2062,23 +2079,13 @@ void vtkDICOMDirectory::ProcessOsirixDatabase(const char *fname)
       }
 
       vtkDICOMItem seriesItem;
-      vtkTypeInt64 zseries = se->col[SE_PK].ToTypeInt64();
+      std::vector<vtkTypeInt64> zseriesInSeries;
+      zseriesInSeries.push_back(se->col[SE_PK].ToTypeInt64());
       double seriesSeconds = se->col[SE_DATE].ToDouble();
       std::string seriesDT = ConvertOsirixTime(seriesSeconds);
       vtkDICOMValue sopClassUID(
         vtkDICOMVR::UI, se->col[SE_SERIESSOPCLASSUID].ToString());
-      std::string seriesUID = se->col[SE_SERIESDICOMUID].ToString();
-      // Remove any text before the UID
-      size_t k = 0;
-      while (k < seriesUID.length() &&
-             (seriesUID[k] <= '0' || seriesUID[k] >= '9'))
-      {
-        k++;
-      }
-      if (k > 0)
-      {
-        seriesUID = seriesUID.substr(k, seriesUID.length()-k);
-      }
+      std::string seriesUID = CleanUID(se->col[SE_SERIESDICOMUID].ToString());
 
       seriesItem.Set(
         DC::SpecificCharacterSet, vtkDICOMCharacterSet::ISO_IR_192);
@@ -2092,6 +2099,22 @@ void vtkDICOMDirectory::ProcessOsirixDatabase(const char *fname)
       seriesItem.Set(DC::SeriesTime, seriesDT.substr(8,13));
       seriesItem.Set(DC::Modality, se->col[SE_MODALITY].ToString());
 
+      // if (you want to recombine any series that Osirix has split)
+      {
+        // Find all other Osirix "series" with this UID
+        std::vector<SeriesRow>::iterator se2 = se;
+        while (++se2 != seriesTable.end())
+        {
+          if (CleanUID(se2->col[SE_SERIESDICOMUID].ToString()) != seriesUID)
+          {
+            break;
+          }
+          ++se;
+          zseriesInSeries.push_back(se->col[SE_PK].ToTypeInt64());
+          ++zseriesVecIter;
+        }
+      }
+
       vtkSmartPointer<vtkStringArray> fileNames =
         vtkSmartPointer<vtkStringArray>::New();
       vtkDICOMSequence imageRecordSequence;
@@ -2099,20 +2122,29 @@ void vtkDICOMDirectory::ProcessOsirixDatabase(const char *fname)
       std::string lastpath;
 
       // Search for the first image in the series
+      std::vector<vtkTypeInt64>::iterator zseriesInSeriesVecIter =
+        zseriesInSeries.begin();
       std::vector<vtkTypeInt64>::iterator zimageVecIter =
-        std::lower_bound(zimageVec.begin(), zimageVec.end(), zseries);
+        std::lower_bound(zimageVec.begin(), zimageVec.end(),
+          *zseriesInSeriesVecIter);
       size_t imIdx = std::distance(zimageVec.begin(), zimageVecIter);
 
       // Go through all of the images in the series
       for (std::vector<ImageRow>::iterator im = imageTable.begin() + imIdx;
-           im != imageTable.end(); ++im)
+           im != imageTable.end(); ++im, ++zimageVecIter)
       {
         // Break when we find a series that isn't part of the study
-        if (*zimageVecIter > zseries)
+        if (*zimageVecIter != *zseriesInSeriesVecIter)
         {
-          break;
+          if (++zseriesInSeriesVecIter == zseriesInSeries.end())
+          {
+            break;
+          }
+          zimageVecIter = std::lower_bound(zimageVec.begin(), zimageVec.end(),
+            *zseriesInSeriesVecIter);
+          imIdx = std::distance(zimageVec.begin(), zimageVecIter);
+          im = imageTable.begin() + imIdx;
         }
-        ++zimageVecIter;
 
         std::string fpath = im->col[IM_PATHSTRING].ToString();
         if (fpath.length() == 0)

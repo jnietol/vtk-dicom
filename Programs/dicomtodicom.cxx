@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2019 David Gobbi
+  Copyright (c) 2012-2022 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -37,10 +37,8 @@
 #include "vtkSmartPointer.h"
 #include "vtkVersion.h"
 
-#if VTK_MAJOR_VERSION >= 6 || VTK_MINOR_VERSION >= 10
 #include "vtkImageResize.h"
 #include "vtkImageSincInterpolator.h"
-#endif
 
 #include <algorithm>
 #include <string>
@@ -93,7 +91,7 @@ void dicomtodicom_version(FILE *file, const char *command_name, bool verbose)
   {
     fprintf(file, "%s %s\n", cp, DICOM_VERSION);
     fprintf(file, "\n"
-      "Copyright (c) 2012-2019, David Gobbi.\n\n"
+      "Copyright (c) 2012-2022, David Gobbi.\n\n"
       "This software is distributed under an open-source license.  See the\n"
       "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
   }
@@ -448,10 +446,8 @@ void dicomtodicom_convert_one(
     vtkSmartPointer<vtkImageReslice>::New();
   vtkSmartPointer<vtkDICOMCTRectifier> rectify =
     vtkSmartPointer<vtkDICOMCTRectifier>::New();
-#if VTK_MAJOR_VERSION >= 6 || VTK_MINOR_VERSION >= 10
   vtkSmartPointer<vtkImageResize> resample =
     vtkSmartPointer<vtkImageResize>::New();
-#endif
   vtkSmartPointer<vtkMatrix4x4> axes =
     vtkSmartPointer<vtkMatrix4x4>::New();
   int permutation[3] = { 0, 1, 2 };
@@ -472,7 +468,6 @@ void dicomtodicom_convert_one(
     // check if resampling was requested
     if (options->resample)
     {
-#if VTK_MAJOR_VERSION >= 6 || VTK_MINOR_VERSION >= 10
       // generate cube voxels
       double spacing[3] = { 1.0, 1.0, 1.0 };
       const vtkDICOMValue& v = meta->Get(DC::PixelSpacing);
@@ -495,10 +490,6 @@ void dicomtodicom_convert_one(
       resample->BorderOn();
       resample->Update();
       lastOutput = resample->GetOutputPort();
-#else
-      fprintf(stderr,
-              "\nTo use --resample, recompile with VTK 5.10 or later.\n\n");
-#endif
     }
 
     // create a permutation matrix to make the slices axial

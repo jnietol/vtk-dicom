@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2019 David Gobbi
+  Copyright (c) 2012-2022 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -605,11 +605,7 @@ void vtkDICOMWriter::GenerateOverlays(
 //----------------------------------------------------------------------------
 void vtkDICOMWriter::SetOverlayInputData(vtkImageData *overlay)
 {
-#if VTK_MAJOR_VERSION >= 6
   this->SetInputData(1, overlay);
-#else
-  this->SetInput(1, overlay);
-#endif
 }
 
 //----------------------------------------------------------------------------

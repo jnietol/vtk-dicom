@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2019 David Gobbi
+  Copyright (c) 2012-2022 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -39,10 +39,7 @@
 #include "vtkErrorCode.h"
 #include "vtkSortFileNames.h"
 #include "vtkSmartPointer.h"
-
-#if (VTK_MAJOR_VERSION > 5) || (VTK_MINOR_VERSION > 9)
 #include "vtkImageHistogramStatistics.h"
-#endif
 
 #include <string>
 #include <vector>
@@ -92,7 +89,7 @@ void niftitodicom_version(FILE *file, const char *command_name, bool verbose)
   {
     fprintf(file, "%s %s\n", cp, DICOM_VERSION);
     fprintf(file, "\n"
-      "Copyright (c) 2012-2019, David Gobbi.\n\n"
+      "Copyright (c) 2012-2022, David Gobbi.\n\n"
       "This software is distributed under an open-source license.  See the\n"
       "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
   }
@@ -664,7 +661,6 @@ void niftitodicom_convert_one(
   if (scalarType != VTK_SHORT && scalarType != VTK_UNSIGNED_SHORT &&
       (scalarType != VTK_UNSIGNED_CHAR || !allowUnsignedChar))
   {
-#if (VTK_MAJOR_VERSION > 5) || (VTK_MINOR_VERSION > 9)
     if (scalarType == VTK_FLOAT || scalarType == VTK_DOUBLE)
     {
       // compute range
@@ -699,7 +695,6 @@ void niftitodicom_convert_one(
         caster->SetScale(10.0);
       }
     }
-#endif
 
     caster->SetInputConnection(lastOutput);
     caster->SetOutputScalarType(VTK_SHORT);

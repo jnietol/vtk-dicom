@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2019 David Gobbi
+  Copyright (c) 2012-2022 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -1973,12 +1973,7 @@ int vtkDICOMReader::RequestData(
     // get the overlay data object, allocate memory
     vtkImageData *data =
       static_cast<vtkImageData *>(outInfo->Get(vtkDataObject::DATA_OBJECT()));
-#if VTK_MAJOR_VERSION >= 6
     this->AllocateOutputData(data, outInfo, uExtent);
-#else
-    data->SetExtent(uExtent);
-    data->AllocateScalars();
-#endif
     this->ReadOverlays(data);
   }
 
@@ -2031,12 +2026,7 @@ int vtkDICOMReader::RequestData(
   // get the data object, allocate memory
   vtkImageData *data =
     static_cast<vtkImageData *>(outInfo->Get(vtkDataObject::DATA_OBJECT()));
-#if VTK_MAJOR_VERSION >= 6
   this->AllocateOutputData(data, outInfo, extent);
-#else
-  data->SetExtent(extent);
-  data->AllocateScalars();
-#endif
 
   // label the scalars as "PixelData"
   data->GetPointData()->GetScalars()->SetName("PixelData");

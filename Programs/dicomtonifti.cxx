@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2019 David Gobbi
+  Copyright (c) 2012-2022 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -39,10 +39,7 @@
 #include "vtkErrorCode.h"
 #include "vtkSortFileNames.h"
 #include "vtkSmartPointer.h"
-
-#if (VTK_MAJOR_VERSION > 5) || (VTK_MINOR_VERSION > 9)
 #include "vtkImageHistogramStatistics.h"
-#endif
 
 #include <string>
 #include <vector>
@@ -94,7 +91,7 @@ void dicomtonifti_version(FILE *file, const char *command_name, bool verbose)
   {
     fprintf(file, "%s %s\n", cp, DICOM_VERSION);
     fprintf(file, "\n"
-      "Copyright (c) 2012-2019, David Gobbi.\n\n"
+      "Copyright (c) 2012-2022, David Gobbi.\n\n"
       "This software is distributed under an open-source license.  See the\n"
       "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
   }
@@ -990,7 +987,7 @@ void dicomtonifti_convert_one(
       hdr->SetCalMax((l + 0.5*w)*m + b);
     }
   }
-#if (VTK_MAJOR_VERSION > 5) || (VTK_MINOR_VERSION > 9)
+
   if (!useWindowLevel)
   {
     std::string photometric =
@@ -1011,7 +1008,6 @@ void dicomtonifti_convert_one(
       }
     }
   }
-#endif
 
   // prepare the writer to write the image
   vtkSmartPointer<vtkNIFTIWriter> writer =
