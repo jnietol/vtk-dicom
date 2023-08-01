@@ -14,7 +14,7 @@ include(CTest)
 # Project version
 set(DICOM_MAJOR_VERSION 0)
 set(DICOM_MINOR_VERSION 8)
-set(DICOM_PATCH_VERSION 13)
+set(DICOM_PATCH_VERSION 14)
 set(DICOM_SHORT_VERSION "${DICOM_MAJOR_VERSION}.${DICOM_MINOR_VERSION}")
 set(DICOM_VERSION "${DICOM_SHORT_VERSION}.${DICOM_PATCH_VERSION}")
 
@@ -223,6 +223,12 @@ else()
       USE_EXTERNAL        "${DICOM_USE_EXTERNAL}"
       TEST_INPUT_DATA_DIRECTORY   "${dicom_test_data_directory_input}"
       TEST_OUTPUT_DATA_DIRECTORY  "${dicom_test_data_directory_output}")
+
+    # Disable deprecation warnings for MSVC
+    if(MSVC)
+      vtk_module_definitions(${dicom_modules}
+        PRIVATE -D_CRT_SECURE_NO_DEPRECATE)
+    endif()
 
     if(BUILD_PYTHON_WRAPPERS)
       find_package(PythonInterp ${VTK_PYTHON_VERSION} QUIET)

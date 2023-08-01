@@ -25,7 +25,7 @@
  *  This class provides the means to convert the various international
  *  text encodings used by DICOM to UTF-8 and back again.
  *
- *  During conversion to UTF-8, any codes the original encoding that
+ *  During conversion to UTF-8, any codes from the original encoding that
  *  can't be converted are replaced by Unicode's "REPLACEMENT CHARACTER",
  *  which is a question mark in a black diamond.  For instance, if the
  *  original encoding is ISO_IR_6 (ASCII), any octets outside of the
@@ -34,7 +34,7 @@
  *  DICOM supports a fairly small number of single-byte and multi-byte
  *  character sets.  The only VRs that support these character sets are
  *  PN, LO, SH, ST, LT, and ST (all other text VRs must be ASCII). In
- *  addition to ASCII, there are eleven 8-bit single-byte encodings,
+ *  addition to ASCII, there are twelve 8-bit single-byte encodings,
  *  three iso-2022 multi-byte encodings, and three variable-length
  *  encodings (UTF-8, GB18030, GBK).
  *
@@ -48,8 +48,8 @@
  *  'greek' (iso-8859-7), 'hebrew' (iso-8859-8), 'tis-620', 'shift-jis',
  *  'euc-jp', 'iso-2022-jp', 'korean' (euc-kr), 'chinese' (gbk), 'gb18030',
  *  'big5', 'cp1250', 'cp1251', 'cp1252', 'cp1253', 'cp1254', 'cp1255',
- *  'cp1256', 'cp1257', and 'utf-8'.  Common aliases of these character
- *  sets can also be used.
+ *  'cp1256', 'cp1257', 'cp1258', and 'utf-8'.  Common aliases of these
+ *  character sets can also be used.
  */
 class VTKDICOM_EXPORT vtkDICOMCharacterSet
 {
@@ -71,7 +71,8 @@ public:
     ISO_IR_166 = 18, // ISO-8859-11, thai
     X_LATIN7   = 19, // ISO-8859-13, latin7, baltic rim
     X_LATIN8   = 20, // ISO-8859-14, latin8, celtic
-    X_LATIN9   = 21, // ISO-8859-15, latin9, western europe
+    ISO_IR_203 = 21, // ISO-8859-15, latin9, western europe
+    X_LATIN9   = 21, // key from before ISO_IR 203 entered DICOM
     X_LATIN10  = 22, // ISO-8859-16, latin10, southeastern europe
     X_EUCKR    = 24, // euc-kr,      ISO_IR_149 without escape codes
     X_GB2312   = 25, // gb2312,      ISO_IR_58 without escape codes
@@ -89,6 +90,7 @@ public:
     ISO_2022_IR_138 = 47, // ISO-8859-8,  hebrew
     ISO_2022_IR_148 = 48, // ISO-8859-9,  latin5, turkish
     ISO_2022_IR_166 = 50, // ISO-8859-11, thai
+    ISO_2022_IR_203 = 53, // ISO-8859-15, latin9, western europe
     ISO_2022_IR_149 = 56, // the KS X 1001 part of ISO-2022-KR
     ISO_2022_IR_58  = 57, // the GB2312 part of ISO-2022-CN
     ISO_IR_192 = 64, // UTF-8,       unicode
@@ -106,6 +108,7 @@ public:
     X_CP1255   = 85, // cp1255,      hebrew
     X_CP1256   = 86, // cp1256,      arabic
     X_CP1257   = 87, // cp1257,      baltic rim
+    X_CP1258   = 88, // cp1258,      vietnamese
     X_KOI8     = 90, // koi8,        cyrillic
     Unknown    = 255  // signifies unknown character set
   };
@@ -362,6 +365,8 @@ private:
     int charset, const char *t, size_t l, std::string *s);
   static size_t JISXToUTF8(
     int csGL, int csGR, const char *t, size_t l, std::string *s, int m);
+  static size_t UTF8ToCP1258(const char *t, size_t l, std::string *s);
+  static size_t CP1258ToUTF8(const char *t, size_t l, std::string *s, int m);
 
   static unsigned int InitISO2022(unsigned char key, unsigned char G[4]);
   static EscapeType EscapeCode(const char *cp, size_t l, unsigned int *state);
