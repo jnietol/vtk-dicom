@@ -191,6 +191,26 @@ PS3.5
 HEVC/H.265 Main 10 Profile / Level 5.1
 Transfer Syntax
 PS3.5
+1.2.840.10008.1.2.4.201
+High-Throughput JPEG 2000 Image Compression (Lossless Only)
+Transfer Syntax
+PS3.5
+1.2.840.10008.1.2.4.202
+High-Throughput JPEG 2000 with RPCL Options Image Compression (Lossless Only)
+Transfer Syntax
+PS3.5
+1.2.840.10008.1.2.4.203
+High-Throughput JPEG 2000 Image Compression
+Transfer Syntax
+PS3.5
+1.2.840.10008.1.2.4.204
+JPIP HTJ2K Referenced
+Transfer Syntax
+PS3.5
+1.2.840.10008.1.2.4.205
+JPIP HTJ2K Referenced Deflate
+Transfer Syntax
+PS3.5
 1.2.840.10008.1.2.5
 RLE Lossless
 Transfer Syntax
@@ -600,7 +620,7 @@ SOP Class
 PS3.4
 1.2.840.10008.5.1.1.25
 Print Queue SOP Instance (Retired)
-Well-known Print Queue SOP Instance
+Well-known SOP Instance
 PS3.4
 1.2.840.10008.5.1.1.26
 Print Queue Management SOP Class (Retired)
@@ -722,6 +742,10 @@ PS3.4
 Enhanced US Volume Storage
 SOP Class
 PS3.4
+1.2.840.10008.5.1.4.1.1.6.3
+Photoacoustic Image Storage
+SOP Class
+PS3.4
 1.2.840.10008.5.1.4.1.1.7
 Secondary Capture Image Storage
 SOP Class
@@ -764,6 +788,10 @@ SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.9.1.3
 Ambulatory ECG Waveform Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.9.1.4
+General 32-bit ECG Waveform Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.9.2.1
@@ -864,6 +892,10 @@ SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.11.11
 Multiple Volume Rendering Volumetric Presentation State Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.11.12
+Variable Modality LUT Softcopy Presentation State Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.12.1
@@ -1044,6 +1076,14 @@ SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.77.1.7
 Dermoscopic Photography Image Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.77.1.8
+Confocal Microscopy Image Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.77.1.9
+Confocal Microscopy Tiled Pyramidal Image Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.78.1
@@ -1372,6 +1412,26 @@ SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.481.20
 Robotic Radiation Record Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.21
+RT Radiation Set Delivery Instruction Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.22
+RT Treatment Preparation Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.23
+Enhanced RT Image Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.24
+Enhanced Continuous RT Image Storage
+SOP Class
+PS3.4
+1.2.840.10008.5.1.4.1.1.481.25
+RT Patient Position Acquisition Instruction Storage
 SOP Class
 PS3.4
 1.2.840.10008.5.1.4.1.1.501.1
@@ -6148,3 +6208,33 @@ Acquisition Initiation Types
 1.2.840.10008.6.1.1470
 CID 9271
 RT Image Patient Position Acquisition Devices
+1.2.840.10008.6.1.1471
+CID 11001
+Photoacoustic Illumination Method
+1.2.840.10008.6.1.1472
+CID 11002
+Acoustic Coupling Medium
+1.2.840.10008.6.1.1473
+CID 11003
+Ultrasound Transducer Technology
+1.2.840.10008.6.1.1474
+CID 11004
+Speed of Sound Correction Mechanisms
+1.2.840.10008.6.1.1475
+CID 11005
+Photoacoustic Reconstruction Algorithm Family
+1.2.840.10008.6.1.1476
+CID 11006
+Photoacoustic Imaged Property
+1.2.840.10008.6.1.1477
+CID 10005
+X-Ray Radiation Dose Procedure Type Reported
+1.2.840.10008.6.1.1478
+CID 4410
+Topical Treatment
+1.2.840.10008.6.1.1479
+CID 4411
+Lesion Color
+1.2.840.10008.6.1.1480
+CID 4412
+Specimen Stain for Confocal Microscopy

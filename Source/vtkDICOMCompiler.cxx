@@ -189,7 +189,8 @@ public:
 
   // write the head of a data element, return length (8 or 12)
   size_t WriteElementHead(
-    unsigned char* cp, vtkDICOMTag tag, vtkDICOMVR vr, unsigned int vl);
+    unsigned char* cp, vtkDICOMTag tag, vtkDICOMVR vr, unsigned int vl)
+    VTK_DICOM_OVERRIDE;
 
   // write one data element
   bool WriteDataElement(
@@ -200,7 +201,8 @@ public:
   bool WriteElements(
     unsigned char* &cp, unsigned char* &ep,
     vtkDICOMDataElementIterator iter,
-    vtkDICOMDataElementIterator iterend);
+    vtkDICOMDataElementIterator iterend)
+    VTK_DICOM_OVERRIDE;
 
 protected:
   Encoder(vtkDICOMCompiler *comp, int idx) :
@@ -1364,7 +1366,7 @@ bool vtkDICOMCompiler::WriteMetaHeader(
 
   if (instanceUID == 0)
   {
-    instanceUID = this->SeriesUIDs->GetValue(idx);
+    instanceUID = this->SeriesUIDs->GetValue(idx).c_str();
   }
   if (implementationUID == 0)
   {
@@ -1470,11 +1472,11 @@ bool vtkDICOMCompiler::WriteMetaData(
 
   if (instanceUID == 0)
   {
-    instanceUID = this->SeriesUIDs->GetValue(idx);
+    instanceUID = this->SeriesUIDs->GetValue(idx).c_str();
   }
   if (seriesUID == 0)
   {
-    seriesUID = this->SeriesUIDs->GetValue(this->SeriesUIDs->GetMaxId());
+    seriesUID = this->SeriesUIDs->GetValue(this->SeriesUIDs->GetMaxId()).c_str();
   }
   if (studyUID == 0 && meta->Get(DC::StudyInstanceUID).AsString() == "")
   {
