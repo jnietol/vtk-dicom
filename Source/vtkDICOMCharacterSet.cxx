@@ -900,6 +900,19 @@ unsigned int UTF8ToUnicode(const char **cpp, const char *cpEnd)
 }
 
 //----------------------------------------------------------------------------
+// Check if "code" is represented by the utf-8 sequence starting at  "cpp"
+// and ending at "cpEnd".  This is meant to be used when UTF8ToUnicode()
+// returns 0xFFFE or 0xFFFF, in order to check whether they were returned
+// as error indicators or whether they were actually present in the string.
+bool IsFFFX(unsigned int code, const char *cpp, const char *cpEnd)
+{
+  return (cpEnd - cpp == 3 &&
+          static_cast<unsigned char>(cpp[0]) == 0xef &&
+          static_cast<unsigned char>(cpp[1]) == 0xbf &&
+          static_cast<unsigned char>(cpp[2]) == (code ^ 0xFF40));
+}
+
+//----------------------------------------------------------------------------
 // Different ways to handle failed conversions
 enum { UTF8_IGNORE, UTF8_REPLACE, UTF8_ESCAPE };
 
@@ -1484,14 +1497,9 @@ size_t UTF8ToUTF8(const char *text, size_t l, std::string *s, int mode)
   {
     const char *lastpos = cp;
     unsigned int code = UTF8ToUnicode(&cp, ep);
-    size_t n = cp - lastpos;
     // check for 0xFFFE and 0xFFFF invalid characters that were not present
     // in the original string, these are the error indicators
-    if (code >= 0xFFFE && code <= 0xFFFF &&
-        !(n == 3 &&
-          static_cast<unsigned char>(lastpos[0]) == 0xef &&
-          static_cast<unsigned char>(lastpos[1]) == 0xbf &&
-          static_cast<unsigned char>(lastpos[2]) == (code ^ 0xFF40)))
+    if (code >= 0xFFFE && code <= 0xFFFF && !IsFFFX(code, lastpos, cp))
     {
       if (code == 0xFFFF)
       {
@@ -1502,7 +1510,7 @@ size_t UTF8ToUTF8(const char *text, size_t l, std::string *s, int mode)
     else
     {
       // check for paired utf-16 surrogates and lone surrogates
-      if (n == 6 || (code & 0xF800) == 0xD800)
+      if (cp - lastpos == 6 || (code & 0xF800) == 0xD800)
       {
         // surrogates pass through, but are marked as utf-8 errors
         errpos = (errpos ? errpos : lastpos);
@@ -2336,14 +2344,21 @@ size_t vtkDICOMCharacterSet::UTF8ToGB18030(
       // non-BMP codes -> 4 byte GB18030 code
       t = code - 0x10000 + 150*1260;
     }
-    else
+    else // (code == 0xFFFE || code == 0xFFFF)
     {
-      // for handling of 0xFFFE and 0xFFFF
-      if (!LastChanceConversion(s, lastpos, ep))
+      if (IsFFFX(code, lastpos, cp))
       {
-        errpos = (errpos ? errpos : lastpos);
+        // was a valid code, not an error indicator
+        t = code - 0xFFFD + 39417;
       }
-      continue;
+      else
+      {
+        if (!LastChanceConversion(s, lastpos, ep))
+        {
+          errpos = (errpos ? errpos : lastpos);
+        }
+        continue;
+      }
     }
 
     // four bytes
@@ -2441,6 +2456,12 @@ size_t vtkDICOMCharacterSet::GB18030ToUTF8(
           }
         }
       }
+      else if (a == 0x80)
+      {
+        // EURO SIGN for CP936 compatibility (also at a=A2,b=E3)
+        code = 0x20AC;
+      }
+
       // the 4-byte code 0x84,0x31,0xA4,0x37 is the valid code for 0xFFFD
       if (code == 0xFFFD && !(cp-lastpos >= 4 && lastpos[0] == '\x84' &&
           lastpos[1] == '1' && lastpos[2] == '\xa4' && lastpos[3] == '7'))
@@ -2590,8 +2611,8 @@ size_t vtkDICOMCharacterSet::UTF8ToJISX(
         continue;
       }
 
-      // JIS X 0201 is an ugly mapping, because it lacks backslash
-      // and tilde, which were put into the official JIS X 0212 page.
+      // JIS X 0201 lacks backslash and tilde, so these are converted
+      // to their fullwidth forms and encoded via JIS X 0208 and 0212.
       if (code == '\\' && hasJISX0208)
       {
         code = 0xFF3C; // FULLWIDTH REVERSE SOLIDUS
@@ -2600,11 +2621,11 @@ size_t vtkDICOMCharacterSet::UTF8ToJISX(
       {
         code = 0xFF5E; // FULLWIDTH TILDE
       }
-      else if (code == 0xA5 && !hasJISX0208) // YEN SIGN
+      else if (code == 0xA5) // YEN SIGN
       {
         code = '\\';
       }
-      else if (code == 0x203E && !hasJISX0212) // MACRON
+      else if (code == 0x203E) // MACRON
       {
         code = '~';
       }
@@ -2661,12 +2682,16 @@ size_t vtkDICOMCharacterSet::UTF8ToJISX(
 
     // conversion of character failed
     size_t lastsize = s->size();
-    s->append(escBase);
+    if (state != 0)
+    {
+      s->append(escBase);
+    }
+    size_t checksize = s->size();
     if (!LastChanceConversion(s, lastpos, ep))
     {
       errpos = (errpos ? errpos : lastpos);
     }
-    if (s->size() == lastsize + 3)
+    if (s->size() == checksize)
     {
       s->resize(lastsize);
     }

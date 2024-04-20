@@ -483,6 +483,272 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   }
   }
 
+  { // test round trip of ISO 2022 japanese
+  const char *sets[] = {
+    "\\ISO 2022 IR 87",
+    "ISO 2022 IR 13\\ISO 2022 IR 87",
+    "\\ISO 2022 IR 87\\ISO 2022 IR 159",
+    "ISO 2022 IR 13\\ISO 2022 IR 87\\ISO 2022 IR 159",
+    NULL
+  };
+  const unsigned char keyJISX0201 = vtkDICOMCharacterSet::ISO_2022_IR_13;
+  const unsigned char keys[2] = {
+    vtkDICOMCharacterSet::ISO_2022_IR_87,
+    vtkDICOMCharacterSet::ISO_2022_IR_159,
+  };
+  const char *escCodes[2] = {
+    "\x1b$B",
+    "\x1b$(D"
+  };
+  const char *ranges[2] = {
+    "2121-222E,223A-2241,224A-2250,225C-226A,2272-2279,227E-227E,"
+    "2330-2339,2341-235A,2361-237A,2421-2473,2521-2576,2621-2638,"
+    "2641-2658,2721-2741,2751-2771,2821-2840,3021-4F53,5021-7426,",
+
+    "222F-2239,2242-2244,226B-2271,2661-2665,2667-2667,2669-266A,"
+    "266C-266C,2671-267C,2742-274E,2772-277E,2921-2922,2924-2924,"
+    "2926-2926,2928-2929,292B-292D,292F-2930,2941-2950,2A21-2A38,"
+    "2A3A-2A77,2B21-2B3B,2B3D-2B43,2B45-2B77,3021-6D63,"
+  };
+
+  for (int i = 0; sets[i]; i++)
+  {
+    vtkDICOMCharacterSet cs(sets[i]);
+
+    bool hasJISX0201 = ((cs.GetKey() & keyJISX0201) == keyJISX0201);
+    const char *escBase = (hasJISX0201 ? "\x1b(J" : "\x1b(B");
+    std::string bytes;
+
+    for (unsigned int c = 0x01; c <= 0x7F; c++)
+    {
+      if (c != 0x1B && c != 0x0E && c != 0x0F) // skip ESC SO SI
+      {
+        bytes.push_back(static_cast<char>(c));
+      }
+    }
+
+    // The half-width katakana are supported by DICOM, even though
+    // they aren't in iso-2022-jp or iso-2022-jp-2
+    if (hasJISX0201)
+    {
+      for (unsigned int c = 0xA1; c <= 0xDF; c++)
+      {
+        bytes.push_back(static_cast<char>(c));
+      }
+    }
+
+    for (int k = 0; k < 2; k++)
+    {
+      unsigned char key = keys[k];
+      if ((cs.GetKey() & key) != key)
+      {
+        continue;
+      }
+      bytes.append(escCodes[k]);
+
+      const char *r = ranges[k];
+      while (*r != '\0')
+      {
+        unsigned int range[2];
+        const char *rnext = r;
+        while (isalnum(*rnext)) { ++rnext; }
+        range[0] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+        TestAssert(*rnext == '-');
+        r = ++rnext;
+        while (isalnum(*rnext)) { ++rnext; }
+        range[1] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+        TestAssert(*rnext == ',');
+        r = ++rnext;
+
+        for (unsigned int c = range[0]; c <= range[1]; c++)
+        {
+          unsigned int a = (c >> 8);
+          unsigned int b = (c & 0xFF);
+          if (a > 0x20 && a < 0x7F)
+          {
+            if (b > 0x20 && b < 0x7F)
+            {
+              bytes.push_back(static_cast<char>(a));
+              bytes.push_back(static_cast<char>(b));
+            }
+          }
+        }
+      }
+    }
+
+    bytes.append(escBase);
+    std::string u = cs.ToUTF8(bytes);
+    std::string t = cs.FromUTF8(u);
+    if (t != bytes)
+    {
+      std::cerr << "Failed round-trip for \"" << sets[i] << "\"\n";
+      TestAssert(t == bytes);
+    }
+  }
+  }
+
+  { // test round trip of ISO 2022 korean and chinese
+  const char *sets[] = {
+    "\\ISO 2022 IR 149",
+    "\x1b$)C",
+    "A1A1-A2E7,A3A1-A4D3,A4D5-A5AA,A5B0-A5B9,A5C1-A5D8,A5E1-A5F8,"
+    "A6A1-A6E4,A7A1-A7EF,A8A1-A8A4,A8A6-A8A6,A8A8-A8AF,A8B1-AAF3,"
+    "ABA1-ABF6,ACA1-ACC1,ACD1-ACF1,B0A1-C8EF,CAA1-FDEF,",
+
+    "\\ISO 2022 IR 58",
+    "\x1b$)A",
+    "A1A1-A1FE,A2B1-A2E2,A2E5-A2EE,A2F1-A2FC,A3A1-A4F3,A5A1-A5F6,"
+    "A6A1-A6B8,A6C1-A6D8,A7A1-A7C1,A7D1-A7F1,A8A1-A8BA,A8C5-A8E9,"
+    "A9A4-A9EF,B0A1-D7F9,D8A1-F7FE,",
+
+    NULL, NULL, NULL
+  };
+
+  for (int i = 0; sets[i]; i += 3)
+  {
+    const char *charset = sets[i];
+    const char *escCode = sets[i+1];
+    const char *ranges = sets[i+2];
+
+    vtkDICOMCharacterSet cs(charset);
+    std::string bytes;
+
+    for (unsigned int c = 0x01; c <= 0x7F; c++)
+    {
+      if (c != 0x1B && c != 0x0E && c != 0x0F) // skip ESC SO SI
+      {
+        bytes.push_back(static_cast<char>(c));
+      }
+    }
+
+    bytes.append("\r\n");
+    bytes.append(escCode);
+
+    const char *r = ranges;
+    while (*r != '\0')
+    {
+      unsigned int range[2];
+      const char *rnext = r;
+      while (isalnum(*rnext)) { ++rnext; }
+      range[0] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      TestAssert(*rnext == '-');
+      r = ++rnext;
+      while (isalnum(*rnext)) { ++rnext; }
+      range[1] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      TestAssert(*rnext == ',');
+      r = ++rnext;
+
+      for (unsigned int c = range[0]; c <= range[1]; c++)
+      {
+        unsigned int a = (c >> 8);
+        unsigned int b = (c & 0xFF);
+        if (a > 0xA0 && a < 0xFF)
+        {
+          if (b > 0xA0 && b < 0xFF)
+          {
+            bytes.push_back(static_cast<char>(a));
+            bytes.push_back(static_cast<char>(b));
+          }
+        }
+      }
+    }
+    std::string u = cs.ToUTF8(bytes);
+    std::string t = cs.FromUTF8(u);
+    if (t != bytes)
+    {
+      std::cerr << "Failed round-trip for \"" << sets[i] << "\"\n";
+      TestAssert(t == bytes);
+    }
+  }
+  }
+
+  { // test round trip of GBK and GB18030
+  const char *sets[] = {
+    "GBK",
+    "8140-A2AA,A2B1-A2E2,A2E5-A2EE,A2F1-A2FC,A340-A4F3,A540-A5F6,"
+    "A640-A6B8,A6C1-A6D8,A6E0-A6EB,A6EE-A6F2,A6F4-A6F5,A740-A7C1,"
+    "A7D1-A7F1,A840-A895,A8A1-A8C0,A8C5-A8E9,A940-A957,A959-A95A,"
+    "A95C-A95C,A960-A996,A9A4-A9EF,AA40-D7F9,D840-FEFE,",
+
+    "GB18030",
+    "8140-FEFE,81308130-8139FE39,82308130-8239FE39,83308130-8339FE39,"
+    "84308130-8431A439," // U+FFFF end of BMP
+    "90308130-9039FE39,E3308130-E3329A35,", // U+10FFFF
+
+    NULL, NULL
+  };
+
+  for (int i = 0; sets[i]; i += 2)
+  {
+    const char *charset = sets[i];
+    const char *ranges = sets[i+1];
+
+    vtkDICOMCharacterSet cs(charset);
+    std::string bytes;
+
+    for (unsigned int c = 0x01; c <= 0x7F; c++)
+    {
+      bytes.push_back(static_cast<char>(c));
+    }
+
+    const char *r = ranges;
+    while (*r != '\0')
+    {
+      unsigned int range[2];
+      const char *rnext = r;
+      while (isalnum(*rnext)) { ++rnext; }
+      range[0] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      TestAssert(*rnext == '-');
+      r = ++rnext;
+      while (isalnum(*rnext)) { ++rnext; }
+      range[1] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      TestAssert(*rnext == ',');
+      r = ++rnext;
+
+      for (unsigned int c = range[0]; c <= range[1]; c++)
+      {
+        if (c > 0xFFFF)
+        {
+          unsigned int a = (c >> 24);
+          unsigned int x = (c >> 16) & 0xFF;
+          unsigned int b = (c >> 8) & 0xFF;
+          unsigned int y = c & 0xFF;
+          if (a > 0x80 && a < 0xFF && b > 0x80 && b < 0xFF)
+          {
+            if (x >= 0x30 && x <= 0x39 && y >= 0x30 && y <= 0x39)
+            {
+              bytes.push_back(static_cast<char>(a));
+              bytes.push_back(static_cast<char>(x));
+              bytes.push_back(static_cast<char>(b));
+              bytes.push_back(static_cast<char>(y));
+            }
+          }
+        }
+        else
+        {
+          unsigned int a = (c >> 8);
+          unsigned int b = c & 0xFF;
+          if (a > 0x80 && a < 0xFF)
+          {
+            if (b >= 0x40 && b < 0xFF && b != 0x7F)
+            {
+              bytes.push_back(static_cast<char>(a));
+              bytes.push_back(static_cast<char>(b));
+            }
+          }
+        }
+      }
+    }
+    std::string u = cs.ToUTF8(bytes);
+    std::string t = cs.FromUTF8(u);
+    if (t != bytes)
+    {
+      std::cerr << "Failed round-trip for \"" << sets[i] << "\"\n";
+      TestAssert(t == bytes);
+    }
+  }
+  }
+
   return rval;
 }
 
