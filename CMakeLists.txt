@@ -1,8 +1,6 @@
-# for CMake 3, add VERSION X.Y.Z to set the version here
-project(DICOM)
-
-# CMake version requirements
 cmake_minimum_required(VERSION 3.12)
+
+project(DICOM)
 
 # Allow custom cmake overrides
 set(DICOM_CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -11,15 +9,9 @@ set(CMAKE_MODULE_PATH ${DICOM_CMAKE_DIR} ${CMAKE_MODULE_PATH})
 # Project version
 set(DICOM_MAJOR_VERSION 0)
 set(DICOM_MINOR_VERSION 8)
-set(DICOM_PATCH_VERSION 15)
+set(DICOM_PATCH_VERSION 16)
 set(DICOM_SHORT_VERSION "${DICOM_MAJOR_VERSION}.${DICOM_MINOR_VERSION}")
 set(DICOM_VERSION "${DICOM_SHORT_VERSION}.${DICOM_PATCH_VERSION}")
-
-# Generic project version variables (forwards compatibility with CMake 3)
-set(PROJECT_MAJOR_VERSION ${DICOM_MAJOR_VERSION})
-set(PROJECT_MINOR_VERSION ${DICOM_MINOR_VERSION})
-set(PROJECT_PATCH_VERSION ${DICOM_PATCH_VERSION})
-set(PROJECT_VERSION ${DICOM_VERSION})
 
 # Include directories
 set(DICOM_INCLUDE_DIRS
@@ -94,11 +86,7 @@ else()
   # We are being built as a stand-alone package
   set(VTK_DICOM_LINK_TARGET vtkDICOM)
 
-  # When CMake 3.0.0 is required, remove this block (see CMP0042).
-  if(NOT DEFINED CMAKE_MACOSX_RPATH)
-    set(CMAKE_MACOSX_RPATH 0)
-  endif()
-
+  # Standard option
   option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
   # Use ctest for dashboard submissions
@@ -234,7 +222,7 @@ else()
     endif()
 
     if(BUILD_PYTHON_WRAPPERS)
-      find_package(PythonInterp ${VTK_PYTHON_VERSION} QUIET)
+      find_package(Python${VTK_PYTHON_VERSION} QUIET COMPONENTS Development)
 
       vtk_module_wrap_python(
         MODULES         ${dicom_modules}
@@ -303,39 +291,6 @@ else()
 
   endif() #(NOT VTK_VERSION VERSION_LESS 8.90)
 
-endif()
-
-# Store the git hash of the current head
-if(EXISTS "${DICOM_SOURCE_DIR}/.git/HEAD")
-  file(READ "${DICOM_SOURCE_DIR}/.git/HEAD" DICOM_SOURCE_VERSION)
-  if("${DICOM_SOURCE_VERSION}" MATCHES "^ref:")
-    string(REGEX REPLACE "^ref: *([^ \n\r]*).*" "\\1"
-      DICOM_GIT_REF "${DICOM_SOURCE_VERSION}")
-    file(READ "${DICOM_SOURCE_DIR}/.git/${DICOM_GIT_REF}"
-      DICOM_SOURCE_VERSION)
-  endif()
-  string(STRIP "${DICOM_SOURCE_VERSION}" DICOM_SOURCE_VERSION)
-endif()
-
-# Store the build date
-if(WIN32)
-#  execute_process(COMMAND "cmd" " /c date /t" OUTPUT_VARIABLE DATE)
-#  string(REGEX REPLACE "[^0-9]*(..).*" "\\1" MONTH "${DATE}")
-#  set(MONTHS ""
-#    "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec")
-#  list(GET MONTHS "${MONTH}" MONTH)
-#  string(REGEX REPLACE "[^/]*/(..)/(....).*" "\\1 ${MONTH} \\2"
-#    DICOM_BUILD_DATE "${DATE}")
-#  execute_process(COMMAND "cmd" " /c echo %TIME%" OUTPUT_VARIABLE TIME)
-#  string(REGEX REPLACE "[^0-9]*(..:..:..).*" "\\1"
-#    DICOM_BUILD_TIME "${TIME}")
-else()
-  execute_process(COMMAND "date" "+%d %b %Y/%H:%M:%S"
-    OUTPUT_VARIABLE DATE_TIME)
-  string(REGEX REPLACE "([^/]*)/.*" "\\1"
-    DICOM_BUILD_DATE "${DATE_TIME}")
-  string(REGEX REPLACE "[^/]*/([0-9:]*).*" "\\1"
-    DICOM_BUILD_TIME "${DATE_TIME}")
 endif()
 
 if(Module_vtkDICOM)

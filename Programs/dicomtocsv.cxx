@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -60,7 +60,7 @@ void dicomtocsv_version(FILE *file, const char *cp)
 {
   fprintf(file, "%s %s\n", cp, DICOM_VERSION);
   fprintf(file, "\n"
-    "Copyright (c) 2012-2022, David Gobbi.\n\n"
+    "Copyright (c) 2012-2024, David Gobbi.\n\n"
     "This software is distributed under an open-source license.  See the\n"
     "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
 }
@@ -71,7 +71,7 @@ void dicomtocsv_usage(FILE *file, const char *cp)
   fprintf(file, "usage:\n"
     "  %s [options] <directory>\n\n", cp);
   fprintf(file, "options:\n"
-    "  -k tag=value      Provide a key to be queried and matched.\n"
+    "  -k tag=value      Provide a tag or key to be queried and matched.\n"
     "  -q <query.txt>    Provide a file to describe the find query.\n"
     "  -u <uids.txt>     Provide a file that contains a list of UIDs.\n"
     "  -o <data.csv>     Provide a file for the query results.\n"
@@ -100,10 +100,11 @@ void dicomtocsv_help(FILE *file, const char *cp)
   dicomtocsv_usage(file, cp);
   fprintf(file, "\n"
     "Dump selected metadata from a DICOM directory to a csv file.\n"
+    "\n"
     "For each attribute to be extracted, the tag can be given with \"-k\"\n"
     "(the \"-k\" option can be repeated as many times as needed).  Tags can\n"
     "given in hexadecimal GGGG,EEEE format, or in text format as specified\n"
-    "in the DICOM dictionary.  Alternately, the tags can be listed in a\n"
+    "in the DICOM dictionary key.  Alternately, the tags can be listed in a\n"
     "query file given with the \"-q\" option (one tag per line).\n"
     "Attributes nested within sequences can be specified by giving a tag\n"
     "path e.g. \"-k Tag1/Tag2/Tag3\".  Either a forward slash or a backslash\n"
@@ -192,7 +193,7 @@ public:
     VTK_DICOM_OVERRIDE;
   void SetMetaData(vtkDICOMMetaData *meta) { this->MetaData = meta; }
 protected:
-  ErrorObserver() : MetaData(0) {}
+  ErrorObserver() : MetaData(nullptr) {}
   ErrorObserver(const ErrorObserver& c) : vtkCommand(c) {}
   void operator=(const ErrorObserver&) {}
   vtkDICOMMetaData *MetaData;
@@ -528,7 +529,7 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
     {
       total += finder->GetFileNamesForSeries(k)->GetNumberOfValues();
     }
-    p->Execute(NULL, vtkCommand::StartEvent, NULL);
+    p->Execute(nullptr, vtkCommand::StartEvent, nullptr);
   }
 
   for (int j = 0; j < finder->GetNumberOfStudies(); j++)
@@ -672,7 +673,7 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
             SearchState &head = tstack.back();
             head.p = tagPath;
             head.q = &query;
-            head.m = 0;
+            head.m = nullptr;
             head.n = head.m + 1;
 
             while (!tstack.empty())
@@ -703,7 +704,7 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
                   tag = adapter->ResolvePrivateTag(tag, creator);
                 }
               }
-              const vtkDICOMValue *vptr = 0;
+              const vtkDICOMValue *vptr = nullptr;
               if (mitem)
               {
                 vptr = &mitem->Get(tag);
@@ -720,12 +721,12 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
               }
               if (vptr && !vptr->IsValid())
               {
-                vptr = 0;
+                vptr = nullptr;
               }
               // check if we have reached the end of a tag path
               if (!tpath.HasTail())
               {
-                if (vptr != 0)
+                if (vptr != nullptr)
                 {
                   std::string t = value_as_string(*vptr);
 
@@ -783,7 +784,7 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
                   }
                 }
               }
-              else if (vptr != 0)
+              else if (vptr != nullptr)
               {
                 // go one level deeper into the query
                 qitem = qitem->Get(tpath.GetHead()).GetSequenceData();
@@ -842,7 +843,7 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
           count += numberOfFiles;
           double progress = (static_cast<double>(count)/
                              static_cast<double>(total));
-          p->Execute(NULL, vtkCommand::ProgressEvent, &progress);
+          p->Execute(nullptr, vtkCommand::ProgressEvent, &progress);
         }
       }
     }
@@ -850,7 +851,7 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
 
   if (p)
   {
-    p->Execute(NULL, vtkCommand::EndEvent, NULL);
+    p->Execute(nullptr, vtkCommand::EndEvent, nullptr);
   }
 }
 
@@ -880,7 +881,7 @@ int MAINMACRO(int argc, char *argv[])
   int level = 3; // default to series level
 
   vtkSmartPointer<vtkStringArray> a = vtkSmartPointer<vtkStringArray>::New();
-  const char *ofile = 0;
+  const char *ofile = nullptr;
 
   // always query SpecificCharacterSet
   query.Set(DC::SpecificCharacterSet, vtkDICOMValue(VR::CS));
@@ -1097,7 +1098,7 @@ int MAINMACRO(int argc, char *argv[])
   }
 
   FILE *fp = stdout;
-  FILE *fp1 = NULL;
+  FILE *fp1 = nullptr;
 
   if (ofile)
   {
@@ -1105,7 +1106,7 @@ int MAINMACRO(int argc, char *argv[])
     fp1 = fopen(ofile, "wb");
 #else
     // use wide chars to avoid narrowing to local character set
-    int n = MultiByteToWideChar(CP_UTF8, 0, ofile, -1, NULL, 0);
+    int n = MultiByteToWideChar(CP_UTF8, 0, ofile, -1, nullptr, 0);
     wchar_t *wofile = new wchar_t[n];
     MultiByteToWideChar(CP_UTF8, 0, ofile, -1, wofile, n);
     fp1 = _wfopen(wofile, L"wb");

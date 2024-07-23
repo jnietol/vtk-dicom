@@ -99,8 +99,6 @@ set(LIB_SRCS
 # Headers without a matching .cxx file are listed here
 set(LIB_HDRS
   ${REFCOUNT_HDR}
-  vtkNIFTIPrivate.h
-  ${CMAKE_CURRENT_BINARY_DIR}/vtkDICOMBuild.h
   ${CMAKE_CURRENT_BINARY_DIR}/vtkDICOMConfig.h
   ${CMAKE_CURRENT_BINARY_DIR}/vtkDICOMModule.h
 )
@@ -219,13 +217,14 @@ if(DEFINED VTK_MODULE_ENABLE_VTK_DICOM)
   endforeach()
   vtk_module_add_module(VTK::DICOM
     SOURCES ${LIB_SRCS}
-    HEADERS ${LIB_SRC_HDRS} ${LIB_HDRS})
+    HEADERS ${LIB_SRC_HDRS} ${LIB_HDRS}
+    PRIVATE_HEADERS ${LIB_PRIVATE_HDRS})
   vtk_module_link(VTK::DICOM
     PRIVATE ${GDCM_LIBS} ${DCMTK_LIBS} ${SQLITE_LIBS})
 
 elseif(Module_vtkDICOM)
   # When building as a remote module for older versions of VTK
-  vtk_module_library(vtkDICOM ${LIB_SRCS} ${LIB_HDRS})
+  vtk_module_library(vtkDICOM ${LIB_SRCS} ${LIB_HDRS} ${LIB_PRIVATE_HDRS})
   target_link_libraries(${LIB_NAME}
     LINK_PRIVATE ${GDCM_LIBS} ${DCMTK_LIBS} ${SQLITE_LIBS})
 
@@ -257,7 +256,7 @@ if(BUILD_PYTHON_WRAPPERS OR BUILD_TCL_WRAPPERS OR BUILD_JAVA_WRAPPERS)
 endif()
 
 # Set the library name suffix for VTK libraries
-set(LIB_NAME_SUFFIX "-${VTK_VERSION}")
+set(LIB_NAME_SUFFIX "-${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")
 if(DEFINED VTK_CUSTOM_LIBRARY_SUFFIX)
   set(LIB_NAME_SUFFIX "${VTK_CUSTOM_LIBRARY_SUFFIX}")
 endif()
@@ -267,8 +266,8 @@ add_library(${LIB_NAME} ${LIB_SRCS} ${LIB_HIERARCHY_STAMP})
 set_target_properties(${LIB_NAME} PROPERTIES
   OUTPUT_NAME ${LIB_NAME}${LIB_NAME_SUFFIX})
 set_target_properties(${LIB_NAME} PROPERTIES
-  VERSION "${PROJECT_VERSION}"
-  SOVERSION "${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}")
+  VERSION "${${PROJECT_NAME}_VERSION}"
+  SOVERSION "${${PROJECT_NAME}_MAJOR_VERSION}.${${PROJECT_NAME}_MINOR_VERSION}")
 if(BUILD_PYTHON_WRAPPERS OR BUILD_TCL_WRAPPERS OR BUILD_JAVA_WRAPPERS)
   set_target_properties(${LIB_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()

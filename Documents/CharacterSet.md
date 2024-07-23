@@ -36,34 +36,16 @@ as ASCII.
 
 The extra characters that are supported by the decoder cannot also be
 supported by the encoder, since that would create files that do not
-conform with the DICOM standard.  Instead, the encoder will convert
-the extra characters to ASCII code points in cases where there is a
-suitable replacement.
-
-The conversions that the encoder uses are as follows:
-
-1. Smart quotes become regular ASCII quotes.
-2. Special spaces (wide, narrow) become ASCII space.
-3. Soft hyphens and invisible spaces disappear.
-4. Dashes become ASCII hyphen/minus.
-5. Horizontal bar becomes a double-hyphen.
-6. Ellipsis becomes ASCII "..."
-7. The fraction slash becomes regular ASCII slash.
-8. The swung dash becomes ASCII tilde.
-9. Anything else becomes ? and sets the error flag.
-
-Note that the resulting string might be longer than the original,
-so the length must be checked after encoding if there are constraints
-on the number of characters.
+conform with the DICOM standard.  Encoding is done strictly according
+to the named character set.
 
 
 ## Japanese via ISO 2022
 
-The use of iso-2022 escape sequences for the encoding of Japanese text
-was common before its standardization as iso-2022-jp, and many extensions
-to iso-2022-jp, both formal and informal, continued to arise until as late
-as 2004.  Our decoder aims to broadly support most of these extensions,
-while our encoder aims to strictly follow the rules set in the DICOM standard.
+The use of iso-2022 escape sequences for the encoding of Japanese text,
+referred to as "JIS encoding" began in 1978 and is still common (with
+restrictions) in the form of iso-2022-jp.  DICOM's encoding of Japanese
+is also based on JIS encoding, but with different restrictions.
 
 DICOM iso-2022 Japanese differs from iso-2022-jp most significantly
 in the optional inclusion, in DICOM, of ISO IR 13 in G1.  This is done
@@ -77,47 +59,15 @@ ISO IR 13 in G1.  Furthermore, the decoder returns to the initial
 state for every new line of text (that is, after every CRNL).
 
 In this usage, `ESC )I` will re-designate ISO IR 13 to G1 (though it is
-not recommended to designate any other character set to G1), and `ESC (J`
+not permitted to designate any other character set to G1), and `ESC (J`
 will re-designated ISO IR 14 to G0.
 
 ### Decoding
 
-Our decoder includes the following extensions to DICOM's ISO 2022
-Japanese:
-
-1. Extra characters from Microsoft CP932.
-2. `ESC (I` will place ISO IR 13 in G0.
-3. `ESC (H` will place ISO IR 14 in G0.
-4. `ESC $@` will place ISO IR 87 in G0.
-5. `ESC &@ ESC $B` will place ISO IR 87 in G0.
-6. All of iso-2022-jp-2 is supported.
-
-Notes:
-
-1. When iso-2022-jp text is encoded on Windows, it can contain characters
-   that do not exist in JIS X 0208:1990.  This is because the Windows
-   code page for Japanese, CP932, contains these extra characters.  The
-   inclusion of these characters in text labelled as "iso-2022-jp" can
-   be either accidental or intentional, as in "iso-2022-jp-ms".
-2. The popular encodings euc-jp, shift-jis, and CP932 contain half-width
-   katakana while iso-2022-jp does not.  To allow conversion of these
-   characters to 7-bit iso-2022, the extension 'iso-2022-jp-ext' uses
-   `ESC (I` to allow half-width katakana in G0.
-3. The use of `ESC (H` to place ISO IR 14 was a non-standard historical
-   practice.  It can occur in very old text.
-4. The `ESC $@` sequence is for ISO IR 42 (JISC 6226-1978), which predates
-   ISO IR 87 and is a strict subset of ISO IR 87.  Support of this escape
-   sequence is required by iso-2022-jp.
-5. With the introduction of JIS X 0212:1990, JIS X 0208:1983 was updated
-   to JIS X 0208:1990 with minor revisions.  Rather than register a new
-   iso-ir number for the JIS X 0208:1990, a new compound escape code
-   `ESC &@ ESC $B` was adopted, though it is rarely used.
-6. Since iso-2022-jp-2 is the most commonly-used extension to iso-2022-jp,
-   supporting it in full seemed apropos.
-
-The JIS X 0213 standard and its encodings iso-2022-jp-3 and
-iso-2022-jp-2004 are not supported.  They are rarely used and they
-conflict with the informal iso-2022-jp-ms extension.
+Our decoder expands upon the JIS X 0208:1990 repertoire to include extra
+characters defined in Microsoft CP932 (including the NEC extension).  If
+the defined term ISO 2022 IR 13 is present, then JIS X 0201 is used as
+the initial character set.
 
 ### Encoding
 
@@ -132,7 +82,7 @@ Notes:
 
 1. This generally implies iso-2022-jp, but requires the use of romaji instead
    of ASCII, and also requires the use of JIS X 0208:1990 rather than
-   any other version (such as JIS X 0208-1978 or JIS X 0208-1983).  This
+   any other version (such as JIS X 0208:1978 or JIS X 0208:1983).  This
    provides exactly the same characters as classic shift-jis, with exactly
    the same method for encoding romaji and half-width katakana, but with a
    different way of encoding the JIS X 0208 characters.
@@ -141,10 +91,12 @@ Notes:
 3. This specifies the most widely used subset of iso-2022-jp-2, like the above
    but adding JIS X 0212:1990 for additional characters.
 
-It is preferred to avoid the use of ISO 2022 IR 13 (and ISO IR 13),
-both because it requires the use of romaji (not ASCII) in G0, and
-because half-width katakana are not supported by either iso-2022-jp
-or by iso-2022-jp-2.
+It is preferred to avoid the use of ISO 2022 IR 13 (and ISO IR 13), both
+because it requires romaji (not ASCII) in G0, and because half-width katakana
+are not supported by either iso-2022-jp or by iso-2022-jp-2.  The romaji
+character set does not contain tilde or backslash, so when these characters
+are encoded when romaji has replaced ASCII, they become MACRON and YEN
+SIGN respectively.
 
 For (2) and (3) above, when our encoder encounters half-width katakana,
 it will convert them to full-width katakana for ISO 2022 IR 87. For (1),
@@ -170,28 +122,14 @@ and will be converted if necessary to fit them into an encoding:
 
 1. MACRON and FULLWIDTH MACRON
 2. OVERLINE and FULLWIDTH MACRON
-3. REVERSE SOLIDUS and FULLWIDTH REVERSE SOLIDUS
-4. YEN SIGN and FULLWIDTH YEN SIGN
-5. CENT SIGN and FULLWIDTH CENT SIGN
-6. POUND SIGN and FULLWIDTH POUND SIGN
-7. MINUS SIGN and FULLWIDTH HYPHEN-MINUS
-8. NOT SIGN and FULLWIDTH NOT SIGN
-9. EM DASH and HORIZONTAL BAR
-10. FULLWIDTH TILDE and WAVE DASH
-11. TILDE and FULLWIDTH TILDE
-12. PARALLEL TO and DOUBLE VERTICAL LINE
-
-The use of the romaji character set (implied by the ISO IR 2022 13
-defined term) causes some specific issues regarding compatibility
-mapping, since it does not contain tilde or backslash (REVERSE SOLIDUS).
-So when encoding to ISO 2022 with romaji in G0, tilde is converted to
-FULLWIDTH TILDE (in JIS X 0212) and backslash is converted to
-FULLWIDTH REVERSE SOLIDUS (in JIS X 0208).  This is done to avoid tilde
-and backslash from appearing as MACRON and YEN, respectively.
-
-This romaji-specific compatibility mapping is yet another reason to
-avoid the use of ISO IR 13 unless half-width katakana are absolutely
-necessary.
+3. YEN SIGN and FULLWIDTH YEN SIGN
+4. CENT SIGN and FULLWIDTH CENT SIGN
+5. POUND SIGN and FULLWIDTH POUND SIGN
+6. MINUS SIGN and FULLWIDTH HYPHEN-MINUS
+7. NOT SIGN and FULLWIDTH NOT SIGN
+8. EM DASH and HORIZONTAL BAR
+9. FULLWIDTH TILDE and WAVE DASH
+10. PARALLEL TO and DOUBLE VERTICAL LINE
 
 
 ## Korean via ISO 2022
@@ -225,36 +163,44 @@ of every line that uses Korean characters (or any characters from KS X 1001),
 as required by DICOM.  Hangul that do not exist in KS X 1001 are decomposed
 and stored as 8-byte codes.
 
+The following characters are considered to be compatible by our encoder,
+due to the various tables that vendors use to map KS X 1001 to Unicode:
+
+1. MIDDLE DOT and KATAKANA MIDDLE DOT
+2. SOFT HYPHEN and EN DASH
+3. HORIZONTAL BAR and EM DASH
+4. PARALLEL TO and DOUBLE VERTICAL LINE
+5. TILDE OPERATOR and WAVE DASH
+6. FULLWIDTH CENT SIGN and CENT SIGN
+7. FULLWIDTH POUND SIGN and POUND SIGN
+8. FULLWIDTH YEN SIGN and YEN SIGN
+9. FULLWIDTH NOT SIGN and NOT SIGN
+10. FULLWIDTH TILDE and SMALL TILDE
+11. CIRCLED DOT OPERATOR and FISHEYE
+
 
 ## Chinese via GB18030
 
 The GB18030 encoding was designed to encompass all Unicode code points.
 Every GB18030 code point maps to a unique Unicode code point and
-vice-versa.  Since some GB18030 character codes map to the the
-Private Use Area (PUA) of Unicode, there are some special considerations
-for the use of GB18030 as discussed below.  Also, it must be noted that
-searching for ASCII backslash (0x5c) in GB18030-encoded strings must be
-done with care, as some two-byte character codes have 0x5c as the
-second byte.
+vice-versa, so round-trip encoding of all Unicode is possible.  Since
+the ASCII backslash code (0x5c) can appear in GB18030-encoded strings
+as the second byte of a two-byte character, special consideration is
+applied when decoding multi-value data elements to ensure that 0x5c
+is only parsed as a separator when it appears as a single-byte character.
 
 ### Decoding
 
-Decoding is done strictly according to the GB18030:2000 mapping tables.
-A small number of GB18030 characters map to locations in the Unicode
-PUA region, and will therefore only display correctly when used with
-a Chinese font that was designed for GB18030 (or for the GBK standard,
-which GB18030 extends).
-
-The Unicode 4.1 standard of 2005 added official code points for the
-characters that GB18030 maps to the PUA, so in the absence of fonts
-that include the correct glyphs at the PUA code points, those PUA
-code points can be mapped to Unicode 4.1 code points for display.
-Our decoder does not perform this additional mapping, since this
-would break round-trip mapping using the official GB18030:2000 tables.
+Decoding is done strictly according to the GB18030:2022 mapping tables.
+Compared to GB18030:2005, 18 character code points that previously mapped
+to the PUA (Unicode Private Use Area) are now mapped to valid Unicode
+characters, and 6 other character code points that previously mapped to
+the PUA have been retired in favor of new (previously unused) code points
+for those same six characters.
 
 ### Encoding
 
-As with decoding, encoding is done strictly according to the GB18030:2000
+As with decoding, encoding is done strictly according to the GB18030:2022
 tables.  Unlike our encoders for other character sets, our GB18030
 encoder does not perform any compatibility conversions.  This is because
 every Unicode code point maps to a unique GB18030 code point.
@@ -263,44 +209,55 @@ every Unicode code point maps to a unique GB18030 code point.
 ## Chinese via GBK
 
 The GBK character table is a strict subset of GB18030, and does not
-encompass all of Unicode.  Like GB18030, special consideration is needed
-for scanning GBK strings for backslash, since the second byte of
-some two-byte characters might have the value 0x5c.
+encompass all of Unicode.  Like GB18030, special consideration is used
+when scanning GBK strings for backslash, since the second byte of
+some two-byte characters can have the value 0x5c.
 
 ### Decoding
 
-The GBK table maps some code points to the Unicode PUA, so the same PUA
-concerns apply to GBK as apply to GB18030.
+Decoding is done per the GBK subset of GB18030, with one addition for
+compatibility with text that was encoded with Microsoft Code Page 936:
+the code 0x80 is mapped to the Euro symbol.
 
 ### Encoding
 
-Unlike GB18030, our encoder for GBK includes several compatibility
-conversions.  One conversion (for Unicode 0x1E3F) is related to
-GB18030:2005, 24 are for characters that were added to Unicode in 2005,
-and the remainder are to support round-trip mapping for Unicode strings
-containing PUA code points that were present in older versions of the
-GBK mapping tables.
+Unlike GB18030, our encoder for GBK includes compatibility mappings
+for PUA codes that defined characters in older versions of the GB
+conversion tables.  Our encoder does not encode the Euro symbol.
+See the section on the GB2312 encoder for compatibility mappings
+(all of these are used for GBK except for EM DASH and HORIZONTAL BAR,
+since GBK encodes both separately).
 
 
-## Chinese via ISO 2022
+## Chinese via ISO 2022 (GB2312)
 
 DICOM's ISO 2022 IR 58 is identical to the popular euc-cn encoding of
 GB2312, except that DICOM requires the use of `ESC $)A` at the beginning
 of every line containing characters from GB2312.  Unlike GBK and GB18030,
 the second byte of a two-byte GB2312 character code will never be
-0x5c (ASCII backslash).
+0x5c (ASCII backslash), due to the fact that the high bit is always set.
 
 ### Decoding
 
 Decoding is done by removing the `ESC $)A` escape sequence and decoding
 as GB2312 in its euc-cn form.  The table used for decoding is a strict
-subset of the table defined by GB18030:2000.
+subset of the table defined by GB18030:2022.
 
 ### Encoding
 
 Encoding involves adding the `ESC $)A` escape sequence at the beginning
-of every line containing Chinese characters, and also provides the
-relevant subset of the compatibility conversions that are done for GBK.
+of every line containing Chinese characters, and then encoding as GB2312.
+
+The following encoding equivalencies are used for compatibility with
+historical GB2312 to Unicode mapping tables:
+
+1. MIDDLE DOT and KATAKANA MIDDLE DOT
+2. EM DASH and HORIZONTAL BAR
+3. FULLWIDTH TILDE and WAVE DASH
+4. DOUBLE VERTICAL LINE and PARALLEL TO
+5. HORIZONTAL ELLIPSIS and MIDLINE HORIZONTAL ELLIPSIS
+6. FULLWIDTH CENT SIGN and CENT SIGN
+7. FULLWIDTH POUND SIGN and POUND SIGN
 
 
 ## Considerations for UTF-8

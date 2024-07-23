@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -46,10 +46,10 @@
  *  allowed: 'ascii', 'latin1', 'latin2', 'latin3', 'latin4', 'latin5'
  *  'latin7', 'latin9', 'cyrillic' (iso-8859-5), 'arabic' (iso-8859-6),
  *  'greek' (iso-8859-7), 'hebrew' (iso-8859-8), 'tis-620', 'shift-jis',
- *  'euc-jp', 'iso-2022-jp', 'korean' (euc-kr), 'chinese' (gbk), 'gb18030',
- *  'big5', 'cp1250', 'cp1251', 'cp1252', 'cp1253', 'cp1254', 'cp1255',
- *  'cp1256', 'cp1257', 'cp1258', and 'utf-8'.  Common aliases of these
- *  character sets can also be used.
+ *  'euc-jp', 'iso-2022-jp', 'korean' (euc-kr), 'chinese' (gb2312), 'gbk',
+ *  'gb18030', 'big5', 'cp1250', 'cp1251', 'cp1252', 'cp1253', 'cp1254',
+ *  'cp1255', 'cp1256', 'cp1257', 'cp1258', and 'utf-8'.  Common aliases
+ *  of these character sets can also be used.
  */
 class VTKDICOM_EXPORT vtkDICOMCharacterSet
 {
@@ -74,12 +74,15 @@ public:
     ISO_IR_203 = 21, // ISO-8859-15, latin9, western europe
     X_LATIN9   = 21, // key from before ISO_IR 203 entered DICOM
     X_LATIN10  = 22, // ISO-8859-16, latin10, southeastern europe
-    X_EUCKR    = 24, // euc-kr,      ISO_IR_149 without escape codes
-    X_GB2312   = 25, // gb2312,      ISO_IR_58 without escape codes
+    X_EUCKR    = 24, // euc-kr,      korean without escape codes
+    X_GB2312   = 25, // gb2312,      chinese without escape codes
     ISO_2022_IR_6   = 32, // US_ASCII
     ISO_2022_IR_13  = 33, // JIS X 0201,  japanese romaji and katakana
-    ISO_2022_IR_87  = 34, // JIS X 0208,  japanese 94x94 primary
-    ISO_2022_IR_159 = 36, // JIS X 0212,  japanese 94x94 secondary
+    ISO_2022_IR_87  = 34, // JIS X 0208,  iso-2022-jp with ascii
+    ISO_2022_IR_13_87 = 35, // JIS X 0201+0208, iso-2022-jp with romaji
+    ISO_2022_IR_159 = 36, // JIS X 0212,  japanese supplementary
+    ISO_2022_IR_87_159 = 38, // JIS X 0208+0212, iso-2022-jp-2 subset
+    ISO_2022_IR_13_87_159 = 39, // JIS X 0201+0208+0212, iso-2022-jp-2 subset
     ISO_2022_IR_100 = 40, // ISO-8859-1,  latin1, western europe
     ISO_2022_IR_101 = 41, // ISO-8859-2,  latin2, central europe
     ISO_2022_IR_109 = 42, // ISO-8859-3,  latin3, maltese
@@ -91,8 +94,12 @@ public:
     ISO_2022_IR_148 = 48, // ISO-8859-9,  latin5, turkish
     ISO_2022_IR_166 = 50, // ISO-8859-11, thai
     ISO_2022_IR_203 = 53, // ISO-8859-15, latin9, western europe
-    ISO_2022_IR_149 = 56, // the KS X 1001 part of ISO-2022-KR
-    ISO_2022_IR_58  = 57, // the GB2312 part of ISO-2022-CN
+    ISO_2022_IR_149 = 56, // KS X 1001, korean in G1 with escape codes
+    ISO_2022_IR_58  = 57, // GB2312, chinese in G1 with escape codes
+    X_ISO_2022_JP   = 58, // iso-2022-jp with ascii and romaji
+    X_ISO_2022_JP_1 = 59, // like above, with addition of JIS X 0212
+    X_ISO_2022_JP_2 = 60, // adds chinese, korean, latin1, greek
+    X_ISO_2022_JP_EXT = 61, // iso-2022-jp-1 plus half-width katakana
     ISO_IR_192 = 64, // UTF-8,       unicode
     GB18030    = 65, // gb18030,     chinese with full unicode mapping
     GBK        = 66, // gbk,         chinese
@@ -170,16 +177,44 @@ public:
   //@{
   //! Generate SpecificCharacterSet code values (diagnostic only).
   /*!
-   *  Attempt to generate SpecificCharacterSet code values.  If ISO 2022
-   *  encoding is not used, then a single code value is returned.  If
-   *  ISO 2022 encoding is used with the single-byte character sets, then
-   *  only the code value for first character set will be returned (due to
-   *  limitations in the way this class stores the information).  However,
-   *  if ISO 2022 encoding is used with the multi-byte character sets,
-   *  the result is a set of backslash-separated code values, where
-   *  the first value will be empty if the initial coding is ASCII.
+   *  This will return the same value as GetDefinedTerm() is a defined
+   *  term exists, otherwise it return the same value as GetName() if the
+   *  character set has a name, with a final fallback to the number
+   *  returned by GetKey() converted to a string.
    */
   std::string GetCharacterSetString() const;
+
+  //! Get the defined term (possible multi-valued) for this character set.
+  /*!
+   *  If the character set permitted by the DICOM standard, this will return
+   *  the defined term, otherwise the returned value will be NULL.  An empty
+   *  string is returned for the default character set (ISO_IR 6).  Multiple
+   *  values will be separated by backslashes, e.g. "\\ISO 2022 IR 58" or
+   *  "ISO 2022 IR 13\\ISO 2022 IR 87".
+   */
+  const char *GetDefinedTerm() const;
+
+  //! Get the internet MIME name for this character set.
+  /*!
+   *  The return value will be NULL if there isn't a good match between this
+   *  character set and one of the MIME character sets in common use on the
+   *  internet.  So conversion may be necessary, either to UTF-8 or to a
+   *  different encoding with a similar character repertoire. For example,
+   *  "ISO 2022 IR 149" can be converted to "EUC-KR", "ISO 2022 IR 58" can
+   *  can be converted to "GBK", and "ISO 2022 IR 13\\ISO 2022 IR 87" can be
+   *  converted to "Shift_JIS".  Note that "ISO-2022-JP" is not equivalent
+   *  to DICOM's Japanese encodings since it does not allow half-width
+   *  katakana or the "ISO 2022 IR 159" characters.
+   */
+  const char *GetMIMEName() const;
+
+  //! Get a name that identifies this character set.
+  /*!
+   *  For DICOM character sets, the name is based on the defined term,
+   *  and for other character sets, the common name is used.  If no name
+   *  exists, then "Unknown" will be returned.
+   */
+  const char *GetName() const;
 
   //! Get the numerical code for this character set object.
   unsigned char GetKey() const { return this->Key; }
@@ -189,13 +224,14 @@ public:
   //! Convert text from UTF-8 to this encoding.
   /*!
    *  Attempt to convert from UTF-8 to this character set.  Every
-   *  non-convertible character will be replaced with '?'.  If you
-   *  pass a non-null value for the "lp" parameter, it will return
+   *  non-convertible character will be replaced with '?'.  If you pass
+   *  a non-null value for the "lp" parameter, then "lp" will be set to
    *  the position in the input UTF-8 string where the first conversion
-   *  error occurred.  If a successful conversion was returned, then
-   *  lp will be set to the length of the input string.
+   *  error occurred, and the unconverted character will be output as
+   *  \<U+XXXX\> instead of '?'.  If the conversion was error-free, then
+   *  "lp" will be set to the length of the input string.
   */
-  std::string FromUTF8(const char *text, size_t l, size_t *lp=0) const;
+  std::string FromUTF8(const char *text, size_t l, size_t *lp=nullptr) const;
   std::string FromUTF8(const std::string& text) const {
     return FromUTF8(text.data(), text.length()); }
 
@@ -206,12 +242,13 @@ public:
    *  Characters that cannot be mapped to unicode, or whose place in
    *  unicode is not known, will be printed as unicode U+FFFD which
    *  appears as a question mark in a diamond.  If you pass a non-null
-   *  value for the "lp" parameter, it will return the position in the
-   *  input string where the first conversion error occurred.  If a
-   *  successful conversion was returned, then lp will be set to the
-   *  length of the input string.
+   *  value for the "lp" parameter, then "lp" will be set the position
+   *  in the input string where the first conversion error occurred, and
+   *  each unconverted byte will be output as \<XX\> (a hexadecimal code
+   *  in angle brackets).  If an error-free conversion was returned, then
+   *  "lp" will be set to the length of the input string.
    */
-  std::string ToUTF8(const char *text, size_t l, size_t *lp=0) const;
+  std::string ToUTF8(const char *text, size_t l, size_t *lp=nullptr) const;
   std::string ToUTF8(const std::string& text) const {
     return ToUTF8(text.data(), text.length()); }
 
@@ -221,8 +258,8 @@ public:
   //! Convert text to UTF-8 that is safe to print to the console.
   /*!
    *  All control characters or unconvertible characters will be replaced
-   *  by four-byte octal codes, e.g. '\033'.  Backslashes will be replaced
-   *  by '\134' to avoid any potential ambiguity.
+   *  by four-byte octal codes, e.g. '\\033'.  Backslashes will be replaced
+   *  by '\\134' to avoid any potential ambiguity.
    */
   std::string ToSafeUTF8(const char *text, size_t l) const;
   std::string ToSafeUTF8(const std::string& text) const {
@@ -247,7 +284,7 @@ public:
    *  switch between character sets.
    */
   bool IsISO2022() const {
-    return ((this->Key & ISO_2022_MAX) == (this->Key | ISO_2022));
+    return ((this->Key & ISO_2022_MAX) == (this->Key | ISO_2022_MIN));
   }
 
   //! Returns true if this uses an ISO 8859 code page.
@@ -335,42 +372,44 @@ private:
 
   // Other ISO-2022
   enum {
-    ISO_2022_JP_BASE = 7,
+    DICOM_JP_BITS = 39,
     ISO_2022_BASE = 31,
-    ISO_2022 = 32,
+    ISO_2022_MIN = 32,
     ISO_2022_MAX = 63
   };
 
   size_t AnyToUTF8(const char *t, size_t l, std::string *s, int m) const;
-  size_t UTF8ToSingleByte(const char *t, size_t l, std::string *s) const;
+  size_t UTF8ToSingleByte(const char *t, size_t l, std::string *s, int m) const;
   size_t SingleByteToUTF8(const char *t, size_t l, std::string *s, int m) const;
-  size_t ISO8859ToUTF8(const char *t, size_t l, std::string *s, int) const;
-  size_t UTF8ToISO2022(const char *t, size_t l, std::string *s) const;
+  size_t ISO8859ToUTF8(const char *t, size_t l, std::string *s, int m) const;
+  size_t UTF8ToISO2022(const char *t, size_t l, std::string *s, int m) const;
   size_t ISO2022ToUTF8(const char *t, size_t l, std::string *s, int m) const;
-  static size_t UTF8ToEUCKR(const char *t, size_t l, std::string *s);
+  size_t UTF8ToEUCKR(const char *t, size_t l, std::string *s, int m) const;
   static size_t EUCKRToUTF8(const char *t, size_t l, std::string *s, int m);
-  static size_t UTF8ToGB2312(const char *t, size_t l, std::string *s);
+  static size_t UTF8ToGB2312(const char *t, size_t l, std::string *s, int m);
   static size_t GB2312ToUTF8(const char *t, size_t l, std::string *s, int m);
-  static size_t UTF8ToGB18030(const char *t, size_t l, std::string *s);
+  static size_t UTF8ToGB18030(const char *t, size_t l, std::string *s, int m);
   static size_t GB18030ToUTF8(const char *t, size_t l, std::string *s, int m);
-  static size_t UTF8ToGBK(const char *t, size_t l, std::string *s);
+  static size_t UTF8ToGBK(const char *t, size_t l, std::string *s, int m);
   static size_t GBKToUTF8(const char *t, size_t l, std::string *s, int m);
-  static size_t UTF8ToBig5(const char *t, size_t l, std::string *s);
+  static size_t UTF8ToBig5(const char *t, size_t l, std::string *s, int m);
   static size_t Big5ToUTF8(const char *t, size_t l, std::string *s, int m);
-  static size_t UTF8ToEUCJP(const char *t, size_t l, std::string *s);
+  static size_t UTF8ToEUCJP(const char *t, size_t l, std::string *s, int m);
   static size_t EUCJPToUTF8(const char *t, size_t l, std::string *s, int m);
-  static size_t UTF8ToSJIS(const char *t, size_t l, std::string *s);
+  static size_t UTF8ToSJIS(const char *t, size_t l, std::string *s, int m);
   static size_t SJISToUTF8(const char *t, size_t l, std::string *s, int m);
   static size_t UTF8ToJISX(
-    int charset, const char *t, size_t l, std::string *s);
+    int charset, const char *t, size_t l, std::string *s, int m);
   static size_t JISXToUTF8(
     int csGL, int csGR, const char *t, size_t l, std::string *s, int m);
-  static size_t UTF8ToCP1258(const char *t, size_t l, std::string *s);
+  static size_t UTF8ToCP1258(const char *t, size_t l, std::string *s, int m);
   static size_t CP1258ToUTF8(const char *t, size_t l, std::string *s, int m);
+  static size_t UTF8ToJISX0201(const char *t, size_t l, std::string *s, int m);
 
-  static unsigned int InitISO2022(unsigned char key, unsigned char G[4]);
+  unsigned int InitISO2022(unsigned char G[4]) const;
   static EscapeType EscapeCode(const char *cp, size_t l, unsigned int *state);
-  static unsigned char CharacterSetFromEscapeCode(const char *code, size_t l);
+  unsigned char CharacterSetFromEscapeCodeJP(const char *code, size_t l) const;
+  unsigned char CharacterSetFromEscapeCode(const char *code, size_t l) const;
   static unsigned char KeyFromString(const char *name, size_t nl);
 
   unsigned char Key;
@@ -380,6 +419,10 @@ private:
 
   static const unsigned short *Table[256];
   static const unsigned short *Reverse[256];
+
+  static const int NumberOfAliases;
+  static const char *const Aliases[];
+  static const unsigned char AliasKeys[];
 };
 
 VTKDICOM_EXPORT ostream& operator<<(ostream& o, const vtkDICOMCharacterSet& a);

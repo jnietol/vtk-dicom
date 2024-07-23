@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -62,7 +62,7 @@ vtkDICOMUIDGeneratorInitializer::~vtkDICOMUIDGeneratorInitializer()
 //----------------------------------------------------------------------------
 vtkDICOMUIDGenerator::vtkDICOMUIDGenerator()
 {
-  this->UIDPrefix = NULL;
+  this->UIDPrefix = nullptr;
 }
 
 //----------------------------------------------------------------------------
@@ -83,7 +83,7 @@ void vtkDICOMUIDGenerator::PrintSelf(ostream& os, vtkIndent indent)
 const char *vtkDICOMUIDGenerator::GetUIDPrefix()
 {
   const char *prefix = this->UIDPrefix;
-  if (prefix == NULL)
+  if (prefix == nullptr)
   {
     prefix = vtkDICOMUtilities::GetUIDPrefix();
   }
@@ -101,7 +101,7 @@ void vtkDICOMUIDGenerator::SetUIDPrefix(const char *uid)
   }
   else
   {
-    this->UIDPrefix = NULL;
+    this->UIDPrefix = nullptr;
   }
 }
 
@@ -285,11 +285,11 @@ void vtkGenerateRandomBytes(unsigned char *bytes, vtkIdType n)
 #ifndef DICOM_DEPRECATE_WINXP
   // legacy interface (Windows XP and later)
   HCRYPTPROV hProv;
-  r = CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL,
+  r = CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_FULL,
                           CRYPT_SILENT | CRYPT_VERIFYCONTEXT);
   if (r == 0 && GetLastError() == NTE_BAD_KEYSET)
   {
-    r = CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL,
+    r = CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_FULL,
                             CRYPT_SILENT | CRYPT_NEWKEYSET);
   }
   if (r != 0)
@@ -301,7 +301,7 @@ void vtkGenerateRandomBytes(unsigned char *bytes, vtkIdType n)
   // modern interface (Windows Vista and later), requires bcrypt.lib
   BCRYPT_ALG_HANDLE hProv;
   ULONG dwFlags = 0;
-  if (BCryptOpenAlgorithmProvider(&hProv, BCRYPT_RNG_ALGORITHM, NULL, 0) != 0)
+  if (BCryptOpenAlgorithmProvider(&hProv, BCRYPT_RNG_ALGORITHM, nullptr, 0) != 0)
   {
     // couldn't open algorithm, fall back to default
     hProv = 0;
@@ -545,7 +545,7 @@ void vtkDICOMUIDGenerator::SetDefault(vtkDICOMUIDGenerator *uidgen)
     }
     if (uidgen)
     {
-      uidgen->Register(NULL);
+      uidgen->Register(nullptr);
     }
     else
     {

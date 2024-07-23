@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -42,7 +42,7 @@ void printVersion(FILE *file, const char *cp)
 {
   fprintf(file, "%s %s\n", cp, DICOM_VERSION);
   fprintf(file, "\n"
-    "Copyright (c) 2012-2022, David Gobbi.\n\n"
+    "Copyright (c) 2012-2024, David Gobbi.\n\n"
     "This software is distributed under an open-source license.  See the\n"
     "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
 }
@@ -53,7 +53,7 @@ void printUsage(FILE *file, const char *cp)
   fprintf(file, "usage:\n"
     "  %s file1.dcm [file2.dcm ...]\n\n", cp);
   fprintf(file, "options:\n"
-    "  -k tag          Provide a key to be printed.\n"
+    "  -k tag          Provide a tag or key to be printed.\n"
     "  -q <query.txt>  Provide a file that lists which elements to print.\n"
     "  --charset <cs>  Charset to use if SpecificCharacterSet is missing.\n"
     "  --help          Print a brief help message.\n"
@@ -65,15 +65,25 @@ void printHelp(FILE *file, const char *cp)
 {
   printUsage(file, cp);
   fprintf(file, "\n"
-    "Dump the metadata from a DICOM series as text.  If only a few\n"
+    "Dump the metadata from a set of DICOM files as text.\n"
+    "\n"
+    "By default, all the attributes are dumped.  However, If only a few\n"
     "attributes are to be dumped, then their tags can be given with \"-k\"\n"
     "(the \"-k\" option can be repeated as many times as needed).  Tags can\n"
-    "given in hexadecimal GGGG,EEEE format, or in text format as specified\n"
-    "in the DICOM dictionary.  Alternately, the tags can be listed in a\n"
-    "query file given with the \"-q\" option (one tag per line).\n"
+    "be given in hexadecimal GGGG,EEEE format, or in text format as specified\n"
+    "in the DICOM dictionary key.  Alternatively, the tags can be listed in\n"
+    "a query file given with the \"-q\" option (one tag per line).\n"
     "Attributes nested within sequences can be specified by giving a tag\n"
     "path e.g. \"-k Tag1/Tag2/Tag3\".  Either a forward slash or a backslash\n"
-    "can be used to separate the components of the path.\n\n");
+    "can be used to separate the components of the path.\n"
+    "\n"
+    "For text attribute values, any unprintable bytes will be replaced with\n"
+    "the four characters \"\\nnn\", where \"nnn\" is the three digit octal code\n"
+    "for the byte.  Unprintable bytes are control characters or bytes that\n"
+    "cannot be decoded with the SpecificCharacterSet of the DICOM file.  A\n"
+    "backslash itself will be replaced by its byte value \"\\134\" if the VR is\n"
+    "ST, LT or UT (that is, any VR where backslash isn't used as a separator\n"
+    "for multi-valued attributes).\n\n");
 }
 
 // remove path portion of filename
@@ -132,7 +142,7 @@ void printElement(
   vtkDICOMValue v = iter->GetValue();
   size_t vn = v.GetNumberOfValues();
   const vtkDICOMValue *vp = v.GetMultiplexData();
-  if (vp == 0)
+  if (vp == nullptr)
   {
     vp = &v;
     vn = 1;
@@ -352,7 +362,7 @@ void printElementFromTagPathRecurse(
     {
       ++(*count);
       fprintf(stdout, "  %04d", *count);
-      printElement(0, item, iter, 0, 0);
+      printElement(nullptr, item, iter, 0, 0);
     }
   }
 }
@@ -420,7 +430,7 @@ void printElementFromTagPath(
     }
     else
     {
-      printElement(data, 0, iter, 0, pixelDataVL);
+      printElement(data, nullptr, iter, 0, pixelDataVL);
     }
   }
 }
@@ -605,7 +615,7 @@ int MAINMACRO(int argc, char *argv[])
 
         for (; iter != iterEnd; ++iter)
         {
-          printElement(data, 0, iter, 0, pixelDataVL);
+          printElement(data, nullptr, iter, 0, pixelDataVL);
         }
       }
     }

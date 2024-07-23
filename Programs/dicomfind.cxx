@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -52,7 +52,7 @@ void dicomfind_version(FILE *file, const char *cp)
 {
   fprintf(file, "%s %s\n", cp, DICOM_VERSION);
   fprintf(file, "\n"
-    "Copyright (c) 2012-2022, David Gobbi.\n\n"
+    "Copyright (c) 2012-2024, David Gobbi.\n\n"
     "This software is distributed under an open-source license.  See the\n"
     "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
 }
@@ -96,16 +96,16 @@ void dicomfind_help(FILE *file, const char *cp)
 {
   dicomfind_usage(file, cp);
   fprintf(file, "\n"
-    "This command can be used to locate DICOM files.  It shares many\n"
-    "features with the UNIX \"find\" command.  When searching for files\n"
-    "with a specific attribute (with \"-k\"), the tag can be specified\n"
-    "in the form GGGG,EEEE or with its canonical name e.g. Modality=MR\n"
-    "from the DICOM dictionary.  Alternately, the tags can be listed in a\n"
-    "query file given with the \"-q\" option (one tag per line).\n"
-    "Attributes nested within sequences can be specified by giving a tag\n"
-    "path e.g. \"-k Tag1/Tag2/Tag3\".  Either a forward slash or a backslash\n"
-    "can be used to separate the components of the path.  Private tags\n"
-    "should be preceded by the private dictionary name in square brackets.\n"
+    "This command is like the UNIX \"find\" command, but for DICOM files.\n"
+    "\n"
+    "When searching for files with a specific attribute (with \"-k\"), the\n"
+    "tag can be in its hexadecimal form GGGG,EEEE or with its keyword form\n"
+    "Modality=MR.  Alternatively, the tags can be listed in a query file\n"
+    "with the \"-q\" option (one tag per line).  Attributes nested within\n"
+    "sequences can be specified by giving a tag path \"-k Tag1/Tag2/Tag3\".\n"
+    "Either a forward slash or a backslash can be used to separate the\n"
+    "components of the path.  Private tags hould be preceded by the private\n"
+    "dictionary name in square brackets.\n"
     "\n"
     "The \"-exec\" and \"-execdir\" arguments cause dicomfind to run the\n"
     "specified program on the found files.  For example, to dump each file\n"
@@ -236,7 +236,7 @@ bool execute_command(const char *, char *argv[])
 
   for (int i = 0; i < m; i++)
   {
-    int n = MultiByteToWideChar(CP_UTF8, 0, argv[i], -1, NULL, 0);
+    int n = MultiByteToWideChar(CP_UTF8, 0, argv[i], -1, nullptr, 0);
     wargv[i] = new wchar_t[n];
     MultiByteToWideChar(CP_UTF8, 0, argv[i], -1, wargv[i], n);
   }
@@ -288,7 +288,7 @@ int dicomfind_chdir(const char *dirname)
 int dicomfind_chdir(const char *dirname)
 {
   // use _wchdir to allow paths longer than the 260 char limit
-  int n = MultiByteToWideChar(CP_UTF8, 0, dirname, -1, NULL, 0);
+  int n = MultiByteToWideChar(CP_UTF8, 0, dirname, -1, nullptr, 0);
   wchar_t *wp = new wchar_t[n];
   MultiByteToWideChar(CP_UTF8, 0, dirname, -1, wp, n);
   int rval = _wchdir(wp);
@@ -309,10 +309,10 @@ std::string dicomfind_getcwd()
   wchar_t wbuffer[2048];
   wchar_t *wp = _wgetcwd(wbuffer, sizeof(wbuffer)/sizeof(wchar_t));
   int n = WideCharToMultiByte(
-    CP_UTF8, 0, wp, -1, NULL, 0, NULL, NULL);
+    CP_UTF8, 0, wp, -1, nullptr, 0, nullptr, nullptr);
   char *cp = new char[n];
   WideCharToMultiByte(
-    CP_UTF8, 0, wp, -1, cp, n, NULL, NULL);
+    CP_UTF8, 0, wp, -1, cp, n, nullptr, nullptr);
   std::string s = cp;
   delete [] cp;
   return s;
@@ -401,7 +401,7 @@ void dicomfind_operations(
               sub_argv[ii++] = const_cast<char *>(arg.c_str());
             }
           }
-          sub_argv[ii] = 0;
+          sub_argv[ii] = nullptr;
 
           if (execdir)
           {
@@ -525,7 +525,7 @@ void dicomfind_operations(
               sub_argv[ii++] = const_cast<char *>(arg.c_str());
             }
           }
-          sub_argv[ii] = 0;
+          sub_argv[ii] = nullptr;
 
           if (execdir)
           {

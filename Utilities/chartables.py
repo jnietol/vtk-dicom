@@ -17,9 +17,10 @@ be checked to see if it fits into one of the above categories, and the
 appropriate action could be taken.
 """
 
-import bisect
+import charsets
+import charutil
+
 import sys
-import string
 
 usage = """
 usage:
@@ -49,9 +50,6 @@ whatwg = sys.argv[1]
 if whatwg[-1] not in ('/', '\\'):
     whatwg += '/'
 
-# replacement character
-RCHAR = 0xFFFD
-
 # convenient constants for forward vs. reverse encoding
 Forward = False
 Reverse = True
@@ -63,410 +61,6 @@ cjk_punct_kana = [0x3000,0x30FF] # puct and kana as one big block
 cjk_unified = [0x4E00,0x9FFF]    # cjk unified ideographs
 kr_hangul = [0xAC00,0xD7A3]      # korean hangul block
 
-def readtable(fname):
-    """Read a text file that contains a mapping table.
-    The table is assumed to have two or more columns,
-    with '#' for comments.
-    """
-    f = open(fname, 'r')
-    lines = f.readlines()
-    f.close()
-    maxindex = 0
-    for l in lines:
-        l = l.strip()
-        if l and l[0] != '#':
-            columns = l.split()
-            maxindex = max(maxindex, int(columns[0],base=0))
-    table = [RCHAR]*(maxindex+1)
-    for l in lines:
-        l = l.strip()
-        if l and l[0] != '#':
-            columns = l.split()
-            if len(columns) > 1:
-                table[int(columns[0],base=0)] = int(columns[1],base=0)
-    return table
-
-def readlinear(fname):
-    """Read a linear table, each line becomes two consecutive elements.
-    Comments begin with '#'.
-    """
-    f = open(fname, 'r')
-    lines = f.readlines()
-    f.close()
-    table = []
-    for l in lines:
-        l = l.strip()
-        if l and l[0] != '#':
-            columns = l.split()
-            table.append(int(columns[0],base=0))
-            table.append(int(columns[1],base=0))
-    return table
-
-def readdict(fname):
-    """Read a text file that contains a mapping table.
-    The table is assumed to have two or more columns,
-    with '#' for comments.
-    """
-    d = {}
-    f = open(fname, 'r')
-    for l in f.readlines():
-        l = l.strip()
-        if l and l[0] != '#':
-            columns = l.split()
-            if len(columns) > 1:
-                d[int(columns[0],base=0)] = int(columns[1],base=0)
-    f.close()
-    return d
-
-def makedict(table, reverse, *special):
-    """Turn a table into a dict, since a dict is better for sparse data.
-    If "reverse" is set, the dict provides the reverse mapping.
-    """
-    ranges = []
-    dicts = []
-    for s in special:
-        if type(s) == dict:
-            dicts.append(s)
-        else:
-            ranges.append(s)
-    d = {}
-    for j in range(len(table)):
-        if reverse:
-            i = j
-            c = table[j]
-        else:
-            c = j
-            i = table[j]
-        for r in ranges:
-             if c >= r[0] and c <= r[1]:
-                  c = 0xFFFD
-                  break
-        if i == 0xFFFD or c == 0xFFFD:
-            continue
-        if c not in d:
-            d[c] = i
-    for s in dicts:
-        for c,i in s.items():
-            for r in ranges:
-                if c >= r[0] and c <= r[1]:
-                    c = 0xFFFD
-                    break
-            if c == 0xFFFD:
-                continue
-            d[c] = i
-    return d
-
-def maketable(d, maxrun=8, maxin=0xFFFF):
-    """Given a dict created with "makedict", create a compressed table.
-    """
-    keys = list(d.keys())
-    keys.sort()
-
-    utable = [0]
-    vtable = [RCHAR]
-    wtable = [RCHAR]
-    dtable = []
-
-    i = 0
-    while i < len(keys):
-        key = keys[i]
-        val = d[key]
-        assert val != RCHAR
-        j = i+1
-        jj = 0
-        k = RCHAR
-        # check for a character run
-        while (j < len(keys) and keys[j] == key+(j-i) and
-               d[keys[j]] == val+(j-i)):
-            j += 1
-        if j-i < maxrun:
-            k = len(dtable)
-            assert k != RCHAR
-            j = i+1
-            dtable.append(val)
-            val = RCHAR
-            runlen = 0
-            while j < len(keys) and keys[j] - keys[j-1] < maxrun:
-                key1 = keys[j-1]
-                key2 = keys[j]
-                if key2 == key1+1 and d[key2] == d[key1]+1:
-                    runlen += 1
-                    if runlen == maxrun:
-                        dtable = dtable[0:-runlen]
-                        j -= runlen
-                        break
-                else:
-                    runlen = 0
-                for n in range(key1+1,key2):
-                    dtable.append(RCHAR)
-                    jj += 1
-                dtable.append(d[key2])
-                j += 1
-            if len(dtable) > k:
-                runlen = 1
-                for kk in range(k+1,len(dtable)):
-                    if dtable[kk] == dtable[kk-1]+1:
-                        runlen += 1
-                if len(dtable) == k + runlen:
-                    val = dtable[k]
-                    dtable = dtable[0:k]
-                    k = RCHAR
-        if utable[-1] == key:
-            vtable[-1] = val
-            wtable[-1] = k
-        else:
-            utable.append(key)
-            vtable.append(val)
-            wtable.append(k)
-        utable.append(key+(j+jj-i))
-        vtable.append(RCHAR)
-        wtable.append(RCHAR)
-        i = j
-
-    while utable[-1] > maxin:
-        utable = utable[0:-1]
-        vtable = vtable[0:-1]
-        wtable = wtable[0:-1]
-
-    return [len(utable)] + utable + vtable + wtable + dtable
-
-"""
-# simpler code that does not include 'dtable'
-i = 0
-while i < len(keys):
-    key = keys[i]
-    val = d[key]
-    # look for a run
-    j = i+1
-    while j < len(keys) and keys[j] == key+(j-i) and d[keys[j]] == val+(j-i):
-        j += 1
-    if utable[-1] == key:
-        vtable[-1] = val
-    else:
-        utable.append(key)
-        vtable.append(val)
-    utable.append(key+(j-i))
-    vtable.append(RCHAR)
-    i = j
-"""
-
-def maketable2(table, reverse, *special, **kw):
-    """Given a dense table, create a compressed table.
-    If "reverse" is set, then the compressed table reverses the input table.
-    """
-    d = makedict(table, reverse, *special)
-    t = maketable(d, **kw)
-    try:
-        maxin = kw['maxin']
-    except KeyError:
-        maxin = 0xFFFF
-    header = []
-    ranges = []
-    dicts = []
-    for s in special:
-        if type(s) == dict:
-            dicts.append(s)
-        else:
-            ranges.append(s)
-    header.append(len(ranges))
-    if ranges:
-        newdata = [ [] ]*len(ranges)
-        shift = 0
-        for r in ranges:
-            shift += r[1] - r[0] + 1
-        n = t[0]
-        p = 3*n + 1
-        t[p:p] = [RCHAR]*shift
-        for i in range(2*n+1,3*n+1):
-            if t[i] != RCHAR:
-                t[i] += shift
-                assert t[i] != RCHAR
-        for j in range(len(table)):
-            if reverse:
-                i = j
-                v = table[j]
-            else:
-                i = table[j]
-                v = j
-            p = 3*n + 1
-            for r in ranges:
-                if v >= r[0] and v <= r[1]:
-                    t[v - r[0] + p] = i
-                p += r[1] - r[0] + 1
-        for s in dicts:
-            for v,i in s.items():
-                p = 3*n + 1
-                for r in ranges:
-                    if v >= r[0] and v <= r[1]:
-                        t[v - r[0] + p] = i
-                    p += r[1] - r[0] + 1
-        p = 3*n + 1
-        for r in ranges:
-            j = bisect.bisect(t[1:n+1], r[0])
-            if t[j] == r[0]:
-                t[j+2*n] = p - 3*n - 1
-                assert t[j+2*n] != RCHAR
-                t[j+n] = RCHAR
-            else:
-                j += 1
-                t.insert(j+2*n, p - 3*n - 1)
-                assert t[j+2*n] != RCHAR
-                t.insert(j+n, RCHAR)
-                t.insert(j, r[0])
-                assert t[0] != RCHAR
-                n += 1
-                p += 3
-            header.append(j-1)
-            if j+1 >= n or t[j+1] != r[1] + 1:
-                t.insert(j+1+2*n, RCHAR)
-                t.insert(j+1+n, RCHAR)
-                t.insert(j+1, r[1] + 1)
-                assert t[j+1] != RCHAR
-                n += 1
-                p += 3
-            p += r[1] - r[0] + 1
-        t[0] = n
-
-        while t[n] > maxin:
-           del t[3*n]
-           del t[2*n]
-           del t[1*n]
-           n -= 1
-           t[0] = n
-
-    return header + t
-
-def printrows(table, fmt, n):
-    h = fmt.find('%')
-    l = h+1
-    while fmt[l] in string.digits:
-        l += 1
-    w = str(h)
-    if l > h+1:
-        w = str(h + int(fmt[h+1:l]))
-    fmt1 = '%s' + '%' + w + 's,'
-    fmt2 = '%s' + fmt + ','
-    for k in range(len(table)):
-        u = table[k]
-        s = ' '
-        if k % n == 0:
-            s = '\n  '
-        if u == RCHAR:
-            sys.stdout.write(fmt1 % (s,'RCHAR'))
-        else:
-            sys.stdout.write(fmt2 % (s,u))
-
-def printtable(name, table, reverse, dtype='unsigned short', maxin=0xFFFF):
-    n = table[0]
-    htable = table[1:n+1]
-    l = table[n+1]
-    utable = table[n+2:n+l+2]
-    vtable = table[n+l+2:n+2*l+2]
-    wtable = table[n+2*l+2:n+3*l+2]
-    dtable = table[n+3*l+2:]
-
-    ufmt = '0x%04X'
-    ucnt = 8
-    cfmt = '%6d'
-    ccnt = 8
-    ufmt2 = '0x%04X'
-    cfmt2 = '%6d'
-
-    if reverse:
-        (ffmt2,ffmt) = (ufmt2,ufmt)
-    else:
-        (ffmt2,ffmt) = (cfmt2,cfmt)
-    if not reverse:
-        (tfmt2,tfmt,tcnt) = (ufmt2,ufmt,ucnt)
-    else:
-        (tfmt2,tfmt,tcnt) = (cfmt2,cfmt,ccnt)
-
-    sys.stdout.write('const %s %s[%d] = {' % (dtype, name, len(table)))
-    sys.stdout.write('\n  // hot segments (indexes into segment table)')
-    printrows([n] + htable, '%d', 8)
-    sys.stdout.write('\n  // number of segments')
-    printrows([l], '%d', 8)
-    sys.stdout.write('\n  // segment table')
-    printrows(utable, ffmt2, 8)
-    sys.stdout.write('\n  // compressed segments')
-    printrows(vtable, tfmt2, 8)
-    sys.stdout.write('\n  // uncompressed segments')
-    printrows(wtable, tfmt2, 8)
-
-    itable = list(htable)
-    for i in range(l):
-        if i not in htable:
-            if htable and wtable[i] == RCHAR:
-                itable.insert(bisect.bisect_left(itable, i), i)
-            else:
-                itable.append(i)
-
-    for i in itable:
-        nextval = maxin+1
-        if i+1 < l:
-            nextval = utable[i+1]
-        s = nextval - utable[i]
-        v = vtable[i]
-        w = wtable[i]
-        if v != RCHAR or w != RCHAR:
-            sys.stdout.write(('\n  // ['+ffmt+','+ffmt+']') %
-                             (utable[i], nextval-1))
-        if v != RCHAR:
-            sys.stdout.write((' -> ['+tfmt+','+tfmt+'] # seg %d') % (v,v+s-1,i))
-        if w != RCHAR:
-            sys.stdout.write(' -v # seg %d at pos %d' % (i,w))
-            printrows(dtable[w:w+s], tfmt, tcnt)
-    sys.stdout.write('\n};\n')
-
-def searchtable(table, x):
-    n = table[0]
-    l = table[n+1]
-    utable = table[n+2:n+l+2]
-    vtable = table[n+l+2:n+2*l+2]
-    wtable = table[n+2*l+2:n+3*l+2]
-    dtable = table[n+3*l+2:]
-    for j in table[1:n+1]:
-        if x >= utable[j] and x < utable[j]:
-            i = j
-            break
-    else:
-        i = bisect.bisect(utable, x) - 1
-    u = utable[i]
-    v = vtable[i]
-    if v == RCHAR:
-        v = wtable[i]
-        if v == RCHAR:
-            return RCHAR
-        return dtable[v + (x - u)]
-    elif v == RCHAR:
-        return RCHAR
-    else:
-        return v + (x - u)
-
-def checktable(table, reverse, orig, *dicts):
-    for j in range(len(orig)):
-        if reverse:
-            i = j
-            k = orig[j]
-        else:
-            i = orig[j]
-            k = j
-        c = searchtable(table, k)
-        if k == 0xFFFD:
-            if c != RCHAR:
-                print("zerofail %d %d %#4.4x" % (i, c, k))
-        elif i != c:
-            print("matchfail %d %d %#4.4x" % (i, c, k))
-    for d in dicts:
-        for k,i in d.items():
-            c = searchtable(table, k)
-            if k == 0xFFFD:
-                if c != RCHAR:
-                    print("zerofail %d %d %#4.4x" % (i, c, k))
-            elif i != c:
-                print("matchfail %d %d %#4.4x" % (i, c, k))
-
-
 header = \
 """/*=========================================================================
 This is an automatically generated file.  Include errata for any changes.
@@ -476,6 +70,11 @@ sys.stdout.write(header)
 sys.stdout.write('\n\n')
 sys.stdout.write('#include "vtkDICOMCharacterSetTables.h"\n')
 sys.stdout.write('\n')
+
+# REPLACEMENT CHARACTER and useful functions
+from charutil import RCHAR
+from charutil import readdict, readtable, readlinear
+from charutil import maketable2, checktable, printtable
 
 # ----
 # ASCII
@@ -503,11 +102,11 @@ sys.stdout.write('\n')
 # ----
 
 j0201 = list(range(0,161)) + list(range(0xFF61,0xFFA0)) + [RCHAR]*32
-j0201[ord('\\')] = 0xA5
-j0201[ord('~')] = 0x203E
+j0201[92] = 0xA5 # replace backslash with YEN SIGN
+j0201[126] = 0x203E # replace tilde with MACRON
 j0201_compat = {
-  # allow conversion of backslash, tilde to yen, macron
-  ord('\\') : ord('\\'), ord('~') : ord('~'),
+  ord('\\') : 92, # store backslash as YEN SIGN
+  ord('~') : 126, # store tilde as MACRON
 }
 # allow fullwidth -> halfwidth conversion
 for x,u in readdict(whatwg + 'index-iso-2022-jp-katakana.txt').items():
@@ -532,7 +131,6 @@ sys.stdout.write('\n')
 sys.stdout.write('// Reverse\n')
 printtable("CodePageJISX0201_R", CodePageJISX0201_R, Reverse)
 sys.stdout.write('\n')
-
 
 # ----
 # ISO 8859 Code Pages
@@ -630,8 +228,37 @@ table = maketable2(KSX1001, Forward, [0,163], [1410,3759])
 checktable(table, Forward, KSX1001)
 CodePageKSX1001 = table
 
-table = maketable2(KSX1001, Reverse, cjk_punct, kr_hangul)
-checktable(table, Reverse, KSX1001)
+# For compatiblity with different implementations of KSX-1001,
+# REVERSE SOLIDUS is in ASCII (though not in KS X 1003).
+kr_compat = {
+    0x30FB :   3, # KATAKANA MIDDLE DOT
+    0x00B7 :   3, # MIDDLE DOT
+    0x2013 :   8, # EN DASH
+    0x00AD :   8, # SOFT HYPHEN
+    0x2014 :   9, # EM DASH
+    0x2015 :   9, # HORIZONTAL BAR
+    0x2016 :  10, # DOUBLE VERTICAL LINE
+    0x2225 :  10, # PARALLEL TO
+    # 0x005C :  11, # REVERSE SOLIDUS
+    0xFF3C :  11, # FULLWIDTH REVERSE SOLIDUS
+    0x301C :  12, # WAVE DASH
+    0x223C :  12, # TILDE OPERATOR
+    0x00A2 :  42, # CENT SIGN
+    0xFFE0 :  42, # FULLWIDTH CENT SIGN
+    0x00A3 :  43, # POUND SIGN
+    0xFFE1 :  43, # FULLWIDTH POUND SIGN
+    0x00A5 :  44, # YEN SIGN
+    0xFFE5 :  44, # FULLWIDTH YEN SIGN
+    0x00AC :  93, # NOT SIGN
+    0xFFE2 :  93, # FULLWIDTH NOT SIGN
+    0x02DC :  99, # SMALL TILDE
+    0xFF5E :  99, # FULLWIDTH TILDE
+    0x25C9 : 126, # FISHEYE
+    0x2299 : 126, # CIRCLED DOT OPERATOR
+}
+
+table = maketable2(KSX1001, Reverse, cjk_punct, kr_hangul, kr_compat)
+checktable(table, Reverse, KSX1001, kr_compat)
 CodePageKSX1001_R = table
 
 sys.stdout.write("// Korean KS X 1001:1998")
@@ -665,12 +292,38 @@ sys.stdout.write('\n')
   }
 """
 
+# Changes from GB18030-2000 to 2005 (1st row) and 2022 (all)
+GB18030_changes = [
+    ( 7533, 0xE7C7, 0x1E3F), # LATIN SMALL LETTER M WITH ACUTE
+    ( 7182, 0xE78D, 0xFE10), # PF VERTICAL COMMA
+    ( 7183, 0xE78E, 0xFE12), # PF VERTICAL IDEOGRAPHIC FULL STOP
+    ( 7184, 0xE78F, 0xFE11), # PF VERTICAL IDEOGRAPHIC COMMA
+    ( 7185, 0xE790, 0xFE13), # PF VERTICAL COLON
+    ( 7186, 0xE791, 0xFE14), # PF VERTICAL SEMICOLON
+    ( 7187, 0xE792, 0xFE15), # PF VERTICAL EXCLAMATION MARK
+    ( 7188, 0xE793, 0xFE16), # PF VERTICAL QUESTION MARK
+    ( 7201, 0xE794, 0xFE17), # PF VERTICAL LEFT WHITE LENTICULAR BRACKET
+    ( 7202, 0xE795, 0xFE18), # PF VERTICAL RIGHT WHITE LENTICULAR BRACKET
+    ( 7208, 0xE796, 0xFE19), # PF VERTICAL HORIZONTAL ELLIPSIS
+    (23775, 0xE81E, 0x9FB4), # CJK UNIFIED IDEOGRAPH-9FB4
+    (23783, 0xE826, 0x9FB5), # CJK UNIFIED IDEOGRAPH-9FB5
+    (23788, 0xE82B, 0x9FB6), # CJK UNIFIED IDEOGRAPH-9FB6
+    (23789, 0xE82C, 0x9FB7), # CJK UNIFIED IDEOGRAPH-9FB7
+    (23795, 0xE832, 0x9FB8), # CJK UNIFIED IDEOGRAPH-9FB8
+    (23812, 0xE843, 0x9FB9), # CJK UNIFIED IDEOGRAPH-9FB9
+    (23829, 0xE854, 0x9FBA), # CJK UNIFIED IDEOGRAPH-9FBA
+    (23845, 0xE864, 0x9FBB), # CJK UNIFIED IDEOGRAPH-9FBB
+]
+
 # Also use this table for GBK and GB2312
 GB18030 = readtable(whatwg + 'index-gb18030.txt')
 # Fix difference between whatwg table and official table
 GB18030[6555] = 0xE5E5 # 0x3000, ideographic space (duplicate)
-# Change GB18030-2005 to GB18030-2000 (DICOM uses GB18030-2000)
-GB18030[7533] = 0xE7C7 # 0x1E3F
+
+# Make this the GB18030-2000 table, we can easily adjust to
+# GB18030-2005 or GB18030-2022 during the decoding process
+for x,y,z in GB18030_changes:
+    GB18030[x] = y
 
 # Reorganize the 23940 codes so that GB2312 codes come first, this allows
 # us to use the first 8836 entries as a GB2312 table.
@@ -691,12 +344,28 @@ for i in range(0,len(LinearGB18030)-2,2):
     x2 = min(LinearGB18030[i+2], 39420)
     GB18030 += list(range(y,y+(x2-x1)))
 
+# For Unicode to GB2312 mapping, add compatibility for older tables
+gb2312_compat = {
+    0x30FB :   3, # KATAKANA MIDDLE DOT
+    0x2015 :   9, # HORIZONTAL BAR
+    0x301C :  10, # WAVE DASH
+    0x2225 :  11, # PARALLEL TO
+    0x22EF :  12, # MIDLINE HORIZONTAL ELLIPSIS
+    0x00A2 :  72, # CENT SIGN
+    0x00A3 :  73, # POUND SIGN
+    # 0x0261 : 258, # LATIN SMALL LETTER SCRIPT G
+}
+
+GB2312COMPAT=[RCHAR]*(1 + max(gb2312_compat.keys()))
+table = maketable2(GB2312COMPAT, Reverse, gb2312_compat)
+GB2312CompatTable = table
+
 # For Unicode to GBK mapping, ensure compatibility with the GBK mappings
 # that pre-date the GB18030-2000 standard, as described in this table:
 gbk_compat = {
     # Compatibility mapping - m with acute
     0x1E3F : 7533,
-    # PUA mappings (2) in GB2312
+    # PUA mappings (2) in GB2312 area
     0xE7C7 : 7533, 0xE7C8 : 7536,
     # PUA mappings (13) in GBK - ideographic description characters
     0xE7E7 : 7672, 0xE7E8 : 7673, 0xE7E9 : 7674, 0xE7EA : 7675, 0xE7EB : 7676,
@@ -719,12 +388,12 @@ gbk_compat = {
     0xE856 :23831, 0xE857 :23832, 0xE858 :23833, 0xE859 :23834, 0xE85A :23835,
     0xE85B :23836, 0xE85C :23837, 0xE85D :23838, 0xE85E :23839, 0xE85F :23840,
     0xE860 :23841, 0xE861 :23842, 0xE862 :23843, 0xE863 :23844, 0xE864 :23845,
-    # Compatibility mappings (8) not present in GB18030
+    # Compatibility mappings (8) not present in GB18030-2000
     0x9FB4 :23775, 0x9FB5 :23783, 0x9FB6 :23788, 0x9FB7 :23789, 0x9FB8 :23795,
     0x9FB9 :23812, 0x9FBA :23829, 0x9FBB :23845,
-    # Vertical punctuation (10) within GB2312 range
-    0xFE10 : 7182, 0xFE11 : 7184, 0xFE12 : 7183, 0xFE13 : 7185, 0xFE14 : 7186,
-    0xFE15 : 7187, 0xFE16 : 7188, 0xFE17 : 7201, 0xFE18 : 7202, 0xFE19 : 7208,
+    # Vertical punctuation (10), not official in GBK (only in GB18030)
+    #0xFE10 : 7182, 0xFE11 : 7184, 0xFE12 : 7183, 0xFE13 : 7185, 0xFE14 : 7186,
+    #0xFE15 : 7187, 0xFE16 : 7188, 0xFE17 : 7201, 0xFE18 : 7202, 0xFE19 : 7208,
     # Points beyond the BMP (6)
     #0x20087 : 23767, 0x20089 : 23768, 0x200CC : 23769, 0x215D7 : 23794,
     #0x2298F : 23804, 0x241FE : 23830,
@@ -741,6 +410,10 @@ for k in gbk_compat:
     else:
         v = (a-32)*94 + (b-96)
     gbk_compat[k] = v
+
+# the gb2312 compatibility mappings can also be used for GBK, except one
+gbk_compat.update(gb2312_compat)
+del gbk_compat[0x2015] # HORIZONTAL BAR
 
 GBKCOMPAT=[RCHAR]*(1 + max(gbk_compat.keys()))
 table = maketable2(GBKCOMPAT, Reverse, gbk_compat)
@@ -774,7 +447,10 @@ sys.stdout.write('\n')
 sys.stdout.write('// Reverse\n')
 printtable("CodePageGB18030_R", CodePageGB18030_R, Reverse)
 sys.stdout.write('\n')
-sys.stdout.write('// Compatibility overlay for GBK and GB2312\n')
+sys.stdout.write('// Compatibility overlay for GB2312\n')
+printtable("CodePageGB2312_R", GB2312CompatTable, Reverse)
+sys.stdout.write('\n')
+sys.stdout.write('// Compatibility overlay for GBK\n')
 printtable("CodePageGBK_R", GBKCompatTable, Reverse)
 sys.stdout.write('\n')
 
@@ -1072,61 +748,13 @@ sys.stdout.write('// Reverse\n')
 printtable("CodePageKOI8_R", rtable, Reverse)
 sys.stdout.write('\n')
 
-# this must be consistent with the enum in vtkDICOMCharacterSet.h
-ISO_2022   = 32
-ISO_IR_6   = 0  # US_ASCII
-ISO_IR_13  = 1  # JIS X 0201,  japanese romaji + katakana
-ISO_IR_100 = 8  # ISO-8859-1,  latin1, western europe
-ISO_IR_101 = 9  # ISO-8859-2,  latin2, central europe
-ISO_IR_109 = 10 # ISO-8859-3,  latin3, maltese
-ISO_IR_110 = 11 # ISO-8859-4,  latin4, baltic
-ISO_IR_144 = 12 # ISO-8859-5,  cyrillic
-ISO_IR_127 = 13 # ISO-8859-6,  arabic
-ISO_IR_126 = 14 # ISO-8859-7,  greek
-ISO_IR_138 = 15 # ISO-8859-8,  hebrew
-ISO_IR_148 = 16 # ISO-8859-9,  latin5, turkish
-X_LATIN6   = 17 # ISO-8859-10, latin6, nordic
-ISO_IR_166 = 18 # ISO-8859-11, thai
-X_LATIN7   = 19 # ISO-8859-13, latin7, baltic rim
-X_LATIN8   = 20 # ISO-8859-14, latin8, celtic
-ISO_IR_203 = 21 # ISO-8859-15, latin9, western europe
-X_LATIN10  = 22 # ISO-8859-16, latin10, southeastern europe
-X_EUCKR    = 24 # euc-kr,      ISO_IR_149 without escape codes
-X_GB2312   = 25 # gb2312,      ISO_IR_58 without escape codes
-ISO_2022_IR_6   = 32 # US_ASCII
-ISO_2022_IR_13  = 33 # JIS X 0201,  japanese katakana
-ISO_2022_IR_87  = 34 # JIS X 0208,  japanese 94x94 primary
-ISO_2022_IR_159 = 36 # JIS X 0212,  japanese 94x94 secondary
-ISO_2022_IR_100 = 40 # ISO-8859-1,  latin1, western europe
-ISO_2022_IR_101 = 41 # ISO-8859-2,  latin2, central europe
-ISO_2022_IR_109 = 42 # ISO-8859-3,  latin3, maltese
-ISO_2022_IR_110 = 43 # ISO-8859-4,  latin4, baltic
-ISO_2022_IR_144 = 44 # ISO-8859-5,  cyrillic
-ISO_2022_IR_127 = 45 # ISO-8859-6,  arabic
-ISO_2022_IR_126 = 46 # ISO-8859-7,  greek
-ISO_2022_IR_138 = 47 # ISO-8859-8,  hebrew
-ISO_2022_IR_148 = 48 # ISO-8859-9,  latin5, turkish
-ISO_2022_IR_166 = 50 # ISO-8859-11, thai
-ISO_2022_IR_203 = 53 # ISO-8859-15, latin9, western europe
-ISO_2022_IR_149 = 56 # the KS X 1001 part of ISO-2022-KR
-ISO_2022_IR_58  = 57 # the GB2312 part of ISO-2022-CN
-ISO_IR_192 = 64 # UTF-8,       unicode
-GB18030    = 65 # gb18030,     chinese with full unicode mapping
-GBK        = 66 # gbk,         chinese
-X_BIG5     = 67 # big5 + ETEN, traditional chinese
-X_EUCJP    = 69 # euc-jp,      unix encoding for japanese
-X_SJIS     = 70 # windows-31j, aka shift-jis, code page 932
-X_CP874    = 76 # cp1162,      thai (windows-874)
-X_CP1250   = 80 # cp1250,      central europe
-X_CP1251   = 81 # cp1251,      cyrillic
-X_CP1252   = 82 # cp1252,      western europe
-X_CP1253   = 83 # cp1253,      greek
-X_CP1254   = 84 # cp1254,      turkish
-X_CP1255   = 85 # cp1255,      hebrew
-X_CP1256   = 86 # cp1256,      arabic
-X_CP1257   = 87 # cp1257,      baltic rim
-X_CP1258   = 88 # cp1258,      vietnamese
-X_KOI8     = 90 # koi,         cyrillic
+# ----
+# Print the table of tables
+# ----
+
+# get the charset constants
+from charsets import *
+from charutil import print_table_of_tables
 
 pages = {
   ISO_IR_6 : ('CodePageASCII', 'CodePageASCII_R'),
@@ -1147,7 +775,7 @@ pages = {
   ISO_IR_203 : ('CodePageISO8859_15', 'CodePageISO8859_15_R'),
   X_LATIN10 : ('CodePageISO8859_16', 'CodePageISO8859_16_R'),
   X_EUCKR : ('CodePageKSX1001', 'CodePageKSX1001_R'),
-  X_GB2312 : ('CodePageGB18030', 'CodePageGBK_R'),
+  X_GB2312 : ('CodePageGB18030', 'CodePageGB2312_R'),
   ISO_2022_IR_6 : ('CodePageASCII', 'CodePageASCII_R'),
   ISO_2022_IR_13 : ('CodePageJISX0201', 'CodePageJISX0201_R'),
   ISO_2022_IR_87 : ('CodePageJISX0208', 'CodePageJISX_R'),
@@ -1168,7 +796,7 @@ pages = {
   ISO_2022_IR_203 : ('CodePageISO8859_15', 'CodePageISO8859_15_R'),
   ISO_2022+X_LATIN10 : ('CodePageISO8859_16', 'CodePageISO8859_16_R'),
   ISO_2022_IR_149 : ('CodePageKSX1001', 'CodePageKSX1001_R'),
-  ISO_2022_IR_58 : ('CodePageGB18030', 'CodePageGBK_R'),
+  ISO_2022_IR_58 : ('CodePageGB18030', 'CodePageGB2312_R'),
   GB18030 : ('CodePageGB18030', 'CodePageGB18030_R'),
   GBK : ('CodePageGB18030', 'CodePageGBK_R'),
   X_BIG5 : ('CodePageBig5', 'CodePageBig5_R'),
@@ -1187,18 +815,36 @@ pages = {
   X_KOI8 : ('CodePageKOI8', 'CodePageKOI8_R'),
 }
 
-table = [('0','0')]*256
+forward_tables = ['0']*256
+reverse_tables = ['0']*256
 for x,y in pages.items():
-    table[x] = y
+    forward,reverse = y
+    forward_tables[x] = forward
+    reverse_tables[x] = reverse
 
-sys.stdout.write(
-    'const unsigned short *vtkDICOMCharacterSet::Table[256] = {\n')
-for l in table:
-    sys.stdout.write('  %s,\n' % (l[0],))
-sys.stdout.write('};\n\n')
+print_table_of_tables("Table", forward_tables)
+sys.stdout.write('\n')
+print_table_of_tables("Reverse", reverse_tables)
 
-sys.stdout.write(
-    'const unsigned short *vtkDICOMCharacterSet::Reverse[256] = {\n')
-for l in table:
-    sys.stdout.write('  %s,\n' % (l[1],))
-sys.stdout.write('};\n')
+# ----
+# Print the table of aliases
+# ----
+
+from charutil import print_alias_table
+
+all_aliases = []
+for key,names in charsets.aliases.items():
+    for name in names:
+        all_aliases.append((name, key))
+
+all_aliases.sort()
+alias_names = [name for name,key in all_aliases]
+alias_keys = [key for name,key in all_aliases]
+
+sys.stdout.write('\n')
+sys.stdout.write('const int vtkDICOMCharacterSet::NumberOfAliases = %d;\n'
+                 % (len(all_aliases),))
+sys.stdout.write('\n')
+print_alias_table('const char *const', 'Aliases', alias_names)
+sys.stdout.write('\n')
+print_alias_table('const unsigned char', 'AliasKeys', alias_keys)

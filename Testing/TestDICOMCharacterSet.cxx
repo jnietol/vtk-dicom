@@ -86,7 +86,7 @@ static const char *ClunieText[][3] = {
   "Yamada^Tarou=\xe5\xb1\xb1\xe7\x94\xb0^\xe5\xa4\xaa\xe9\x83\x8e=\xe3\x82\x84\xe3\x81\xbe\xe3\x81\xa0^\xe3\x81\x9f\xe3\x82\x8d\xe3\x81\x86",
   "Yamada^Tarou=\x1b$B;3ED\x1b(B^\x1b$BB@O:\x1b(B=\x1b$B$d$^$@\x1b(B^\x1b$B$\x3f$m$&\x1b(B" },
 
-{ 0, 0, 0 }
+{ nullptr, nullptr, nullptr }
 };
 
 // order is character set, utf-8, native encoding
@@ -94,10 +94,19 @@ static const char *OtherText[][3] = {
 { "GB18030",
   // "Linear1: \x80 to \ufffd\n"
   // "Linear2: \U00010000 to \U0010ffff\n"
+  // "Ver2005: ḿ\n"
+  // "Ver2022: ︐︒︑︓︔︕︖︗︘︙\n"
+  // "Ver2022: 龴龵龶龷龸龹龺龻\n"
   "Linear1: \xc2\x80 to \xef\xbf\xbd\n"
-  "Linear2: \xf0\x90\x80\x80 to \xf4\x8f\xbf\xbf\n",
+  "Linear2: \xf0\x90\x80\x80 to \xf4\x8f\xbf\xbf\n"
+  "Ver2005: \xe1\xb8\xbf\n"
+  "Ver2022: \xef\xb8\x90\xef\xb8\x92\xef\xb8\x91\xef\xb8\x93\xef\xb8\x94\xef\xb8\x95\xef\xb8\x96\xef\xb8\x97\xef\xb8\x98\xef\xb8\x99\n"
+  "Ver2022: \xe9\xbe\xb4\xe9\xbe\xb5\xe9\xbe\xb6\xe9\xbe\xb7\xe9\xbe\xb8\xe9\xbe\xb9\xe9\xbe\xba\xe9\xbe\xbb\n",
   "Linear1: \x81\x30\x81\x30 to \x84\x31\xa4\x37\n"
-  "Linear2: \x90\x30\x81\x30 to \xe3\x32\x9a\x35\n" },
+  "Linear2: \x90\x30\x81\x30 to \xe3\x32\x9a\x35\n"
+  "Ver2005: \xa8\xbc\n"
+  "Ver2022: \xa6\xd9\xa6\xda\xa6\xdb\xa6\xdc\xa6\xdd\xa6\xde\xa6\xdf\xa6\xec\xa6\xed\xa6\xf3\n"
+  "Ver2022: \xfe\x59\xfe\x61\xfe\x66\xfe\x67\xfe\x6d\xfe\x7e\xfe\x90\xfe\xa0\n" },
 
 { "ISO 2022 IR 13\\ISO 2022 IR 87\\ISO 2022 IR 159",
   // "JISX0208: 元気\n"
@@ -110,24 +119,54 @@ static const char *OtherText[][3] = {
   "JISX0212: \x1b$BqV\x1b$(DiQ\x1b(J\n"
   "JISX0201: \xba\xdd\xc6\xc1\xca\n" },
 
+{ "iso-2022-jp",
+  // "JISX0208: 元気\n"
+  // "JISX0201: ¥‾\n"
+  "JISX0208: \xe5\x85\x83\xe6\xb0\x97\n"
+  "JISX0201: \xc2\xa5\xe2\x80\xbe\n",
+  "JISX0208: \x1b$B855$\x1b(B\n"
+  "JISX0201: \x1b(J\x5c\x7e\x1b(B\n" },
+
+{ "iso-2022-jp-1",
+  // "JISX0208: 元気\n"
+  // "JISX0212: 騏驎\n"
+  // "JISX0201: ¥‾\n"
+  "JISX0208: \xe5\x85\x83\xe6\xb0\x97\n"
+  "JISX0212: \xe9\xa8\x8f\xe9\xa9\x8e\n"
+  "JISX0201: \xc2\xa5\xe2\x80\xbe\n",
+  "JISX0208: \x1b$B855$\x1b(B\n"
+  "JISX0212: \x1b$BqV\x1b$(DiQ\x1b(B\n"
+  "JISX0201: \x1b(J\x5c\x7e\x1b(B\n" },
+
+{ "iso-2022-jp-ext",
+  // "JISX0208: 元気\n"
+  // "JISX0212: 騏驎\n"
+  // "JISX0201: ¥‾\n"
+  // "Katakana: ｺﾝﾆﾁﾊ\n"
+  "JISX0208: \xe5\x85\x83\xe6\xb0\x97\n"
+  "JISX0212: \xe9\xa8\x8f\xe9\xa9\x8e\n"
+  "JISX0201: \xc2\xa5\xe2\x80\xbe\n"
+  "Katakana: \xef\xbd\xba\xef\xbe\x9d\xef\xbe\x86\xef\xbe\x81\xef\xbe\x8a\n",
+  "JISX0208: \x1b$B855$\x1b(B\n"
+  "JISX0212: \x1b$BqV\x1b$(DiQ\x1b(B\n"
+  "JISX0201: \x1b(J\x5c\x7e\x1b(B\n"
+  "Katakana: \x1b(I:]FAJ\x1b(B\n" },
+
 { "iso-2022-jp-2",
   // "JISX0208: 元気\n"
   // "JISX0212: 騏驎\n"
-  // "Katakana: ｺﾝﾆﾁﾊ\n"
   // "Chinese:  开发\n"
   // "Korean:   안녕하세요\n"
   // "French:   Très bien\n"
   // "Greek:    μεγάλη\n"
   "JISX0208: \xe5\x85\x83\xe6\xb0\x97\n"
   "JISX0212: \xe9\xa8\x8f\xe9\xa9\x8e\n"
-  "Katakana: \xef\xbd\xba\xef\xbe\x9d\xef\xbe\x86\xef\xbe\x81\xef\xbe\x8a\n"
   "Chinese:  \xe5\xbc\x80\xe5\x8f\x91\n"
   "Korean:   \xec\x95\x88\xeb\x85\x95\xed\x95\x98\xec\x84\xb8\xec\x9a\x94\n"
   "French:   Tr\xc3\xa8s bien\n"
   "Greek:    \xce\xbc\xce\xb5\xce\xb3\xce\xac\xce\xbb\xce\xb7\n",
   "JISX0208: \x1b$B855$\x1b(B\n"
   "JISX0212: \x1b$BqV\x1b$(DiQ\x1b(B\n"
-  "Katakana: \x1b(I:]FAJ\x1b(B\n"
   "Chinese:  \x1b$A?*7\"\x1b(B\n"
   "Korean:   \x1b$(C>H3gGO<<?d\x1b(B\n"
   "French:   \x1b.ATr\x1bNhs bien\n"
@@ -157,7 +196,7 @@ static const char *OtherText[][3] = {
   "BIG5: \xb1`\xa5\xce\xb0\xea\xa6r\xbc\xd0\xb7\xc7\xa6r\xc5\xe9\xaa\xed + \xa6\xb8\xb1`\xa5\xce\xb0\xea\xa6r\xbc\xd0\xb7\xc7\xa6r\xc5\xe9\xaa\xed\n"
   "ETEN: \xf9\xd6\xf9\xd7\xf9\xda\xf9\xd8\xf9\xd9\xf9\xdb\xf9\xdc" },
 
-{ 0, 0, 0 }
+{ nullptr, nullptr, nullptr }
 };
 
 int TestDICOMCharacterSet(int argc, char *argv[])
@@ -171,13 +210,14 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   exename = cp;
 
   { // test the listed encodings
-  for (int i = 0; ClunieText[i][0] != 0; i++)
+  for (int i = 0; ClunieText[i][0] != nullptr; i++)
   {
     std::string name = ClunieText[i][0];
     std::string utf = ClunieText[i][1];
     std::string raw = ClunieText[i][2];
     vtkDICOMCharacterSet cs(name);
     std::string s = cs.ToUTF8(raw);
+    if (s != utf) { std::cerr << name << std::endl; }
     TestAssert(s == utf);
     std::string t = cs.FromUTF8(utf);
     if (name == "\\ISO 2022 IR 58" || name == "\\ISO 2022 IR 149")
@@ -192,7 +232,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
     }
   }
 
-  for (int i = 0; OtherText[i][0] != 0; i++)
+  for (int i = 0; OtherText[i][0] != nullptr; i++)
   {
     std::string name = OtherText[i][0];
     std::string utf = OtherText[i][1];
@@ -202,7 +242,13 @@ int TestDICOMCharacterSet(int argc, char *argv[])
     // if (s != utf) { cout << i << "\n" << s << "\n" << utf << "\n"; }
     TestAssert(s == utf);
     std::string t = cs.FromUTF8(utf);
-    if (name != "iso-2022-jp-2")
+    if (name == "iso-2022-jp-2")
+    {
+      // check japanese, korean (other esc codes don't round-trip)
+      TestAssert(t.compare(0, 46, raw, 0, 46) == 0);
+      TestAssert(t.compare(67, 28, raw, 67, 28) == 0);
+    }
+    else
     {
       TestAssert(t == raw);
     }
@@ -210,7 +256,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   }
 
   { // test storing values in their native encoding in an item
-  for (int i = 0; ClunieText[i][0] != 0; i++)
+  for (int i = 0; ClunieText[i][0] != nullptr; i++)
   {
     std::string name = ClunieText[i][0];
     std::string utf = ClunieText[i][1];
@@ -228,7 +274,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   }
 
   { // test storing values in their native encoding in metadata
-  for (int i = 0; ClunieText[i][0] != 0; i++)
+  for (int i = 0; ClunieText[i][0] != nullptr; i++)
   {
     std::string name = ClunieText[i][0];
     std::string utf = ClunieText[i][1];
@@ -247,7 +293,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   }
 
   { // test storing multiple values in their native encoding in metadata
-  for (int i = 0; ClunieText[i][0] != 0; i++)
+  for (int i = 0; ClunieText[i][0] != nullptr; i++)
   {
     std::string name = ClunieText[i][0];
     std::string utf = ClunieText[i][1];
@@ -265,7 +311,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   }
 
   { // test "safe" conversions
-  for (int i = 0; ClunieText[i][0] != 0; i++)
+  for (int i = 0; ClunieText[i][0] != nullptr; i++)
   {
     // ToSafeUTF8 == ToUTF8 if string is already "safe"
     std::string name = ClunieText[i][0];
@@ -287,6 +333,59 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   // test unconvertible characters for other character sets
   cs = vtkDICOMCharacterSet::X_CP1253;
   TestAssert(cs.ToSafeUTF8("Hello\251 \252") == "Hello\302\251 \\252");
+  }
+
+  { // test strict error reporting when decoding
+  vtkDICOMCharacterSet cs(vtkDICOMCharacterSet::ISO_2022_IR_58);
+  std::string s;
+  size_t l;
+  // test unmapped character codes
+  s = cs.ToUTF8("\x1b$)Aunmapped \xa6\xda character", 25, &l);
+  TestAssert(l == 13);
+  TestAssert(s == "unmapped <A6><DA> character");
+  // test partial character code
+  s = cs.ToUTF8("\x1b$)Apartial \xa6 character", 23, &l);
+  TestAssert(l == 12);
+  TestAssert(s == "partial <A6> character");
+  // test truncated character code
+  s = cs.ToUTF8("\x1b$)Atruncated \xa6", 15, &l);
+  TestAssert(l == 14);
+  TestAssert(s == "truncated <A6>");
+  }
+
+  { // test strict error reporting when encoding
+  vtkDICOMCharacterSet cs(vtkDICOMCharacterSet::GBK);
+  std::string s;
+  size_t l;
+  // test unconvertible character
+  s = cs.FromUTF8("unmapped \xf0\xa1\x80\x84 character", 23, &l);
+  TestAssert(l == 9);
+  TestAssert(s == "unmapped <U+21004> character");
+  // test bad UTF8 sequences
+  s = cs.FromUTF8("bad start \xbf sequence", 20, &l);
+  TestAssert(l = 11);
+  TestAssert(s == "bad start <BF> sequence");
+  // test partial UTF8 sequences
+  s = cs.FromUTF8("partial \xcf sequence", 18, &l);
+  TestAssert(l = 9);
+  TestAssert(s == "partial <CF> sequence");
+  // test truncated UTF8 sequences
+  s = cs.FromUTF8("truncated \xef\xbf", 12, &l);
+  TestAssert(l == 10);
+  TestAssert(s == "truncated <EF><BF>");
+  }
+
+  { // test check for ESC when encoding ISO 2022
+  vtkDICOMCharacterSet cs1(vtkDICOMCharacterSet::ISO_2022_IR_149);
+  vtkDICOMCharacterSet cs2(vtkDICOMCharacterSet::ISO_2022_IR_87);
+  std::string s;
+  size_t l;
+  s = cs1.FromUTF8("esc \x1b(B code", 12, &l);
+  TestAssert(l == 4);
+  TestAssert(s == "esc <1B>(B code");
+  s = cs2.FromUTF8("esc \x1b(B code", 12, &l);
+  TestAssert(l == 4);
+  TestAssert(s == "esc <1B>(B code");
   }
 
   { // test for proper escaping of backslashes in GB18030
@@ -327,15 +426,13 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   }
 
   { // test for proper escaping of backslashes in iso-2022-jp-2
-  std::string name = "\\ISO 2022 IR 87\\ISO 2022 IR 159";
   // the following string includes accented latin and greek characters
   // that when invoked in G0 have the same value as backslash
   // "GÜNTER"
   // "άέήί"
   std::string raw = "G\x1b.A\x1bN\\NTER\\"
                     "\x1b.F\x1bN\\\x1bN]\x1bN^\x1bN_";
-  vtkDICOMItem item;
-  item.Set(DC::SpecificCharacterSet, name);
+  vtkDICOMItem item(vtkDICOMCharacterSet::X_ISO_2022_JP_2, vtkDICOMVR::SS);
   item.Set(DC::OperatorsName, raw);
   vtkDICOMValue v = item.Get(DC::OperatorsName);
   TestAssert(v.GetNumberOfValues() == 2);
@@ -358,9 +455,17 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   vtkDICOMCharacterSet cs = vtkDICOMCharacterSet::ISO_IR_192;
   // the following string has a matched surrogate pair
   std::string raw = "\xed\xa1\x80\xed\xb3\x8c"; // D840 DCCC
-  // case folding causes decoding + encoding
-  std::string cooked = cs.CaseFoldedUTF8(raw.data(), raw.length());
+  // perform a UTF-8 to UTF-8 conversion
+  std::string cooked = cs.ToUTF8(raw.data(), raw.length());
   TestAssert(cooked == "\xf0\xa0\x83\x8c"); // 0200CC
+  // test low surrogate on its own
+  raw = "\xed\xb3\x8c "; // DCCC
+  cooked = cs.ToUTF8(raw.data(), raw.length());
+  TestAssert(cooked == "\xef\xbf\xbd "); // REPLACEMENT CHARACTER
+  // test high surrogate on its own
+  raw = "\xed\xa1\x80 "; // D840
+  cooked = cs.ToUTF8(raw.data(), raw.length());
+  TestAssert(cooked == "\xef\xbf\xbd "); // REPLACEMENT CHARACTER
   }
 
   { // test that all hangul will round-trip through EUC-KR, even the ones
@@ -395,6 +500,38 @@ int TestDICOMCharacterSet(int argc, char *argv[])
   std::string u2 = cs2.ToUTF8(cs2.FromUTF8(u));
   std::string t = cs1.FromUTF8(u2);
   TestAssert(t == jisx0201);
+  }
+
+  { // test round-trip of JIS X 0208 katakana through JIS X 0201
+  // ゛゜ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼ
+  // ソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペ
+  // ホボポマミムメモャヤュユョヨラリルレロワヲンヴ・ー
+  const char *katakana =
+    "\xe3\x82\x9b\xe3\x82\x9c\xe3\x82\xa1\xe3\x82\xa2\xe3\x82\xa3"
+    "\xe3\x82\xa4\xe3\x82\xa5\xe3\x82\xa6\xe3\x82\xa7\xe3\x82\xa8"
+    "\xe3\x82\xa9\xe3\x82\xaa\xe3\x82\xab\xe3\x82\xac\xe3\x82\xad"
+    "\xe3\x82\xae\xe3\x82\xaf\xe3\x82\xb0\xe3\x82\xb1\xe3\x82\xb2"
+    "\xe3\x82\xb3\xe3\x82\xb4\xe3\x82\xb5\xe3\x82\xb6\xe3\x82\xb7"
+    "\xe3\x82\xb8\xe3\x82\xb9\xe3\x82\xba\xe3\x82\xbb\xe3\x82\xbc"
+    "\xe3\x82\xbd\xe3\x82\xbe\xe3\x82\xbf\xe3\x83\x80\xe3\x83\x81"
+    "\xe3\x83\x82\xe3\x83\x83\xe3\x83\x84\xe3\x83\x85\xe3\x83\x86"
+    "\xe3\x83\x87\xe3\x83\x88\xe3\x83\x89\xe3\x83\x8a\xe3\x83\x8b"
+    "\xe3\x83\x8c\xe3\x83\x8d\xe3\x83\x8e\xe3\x83\x8f\xe3\x83\x90"
+    "\xe3\x83\x91\xe3\x83\x92\xe3\x83\x93\xe3\x83\x94\xe3\x83\x95"
+    "\xe3\x83\x96\xe3\x83\x97\xe3\x83\x98\xe3\x83\x99\xe3\x83\x9a"
+    "\xe3\x83\x9b\xe3\x83\x9c\xe3\x83\x9d\xe3\x83\x9e\xe3\x83\x9f"
+    "\xe3\x83\xa0\xe3\x83\xa1\xe3\x83\xa2\xe3\x83\xa3\xe3\x83\xa4"
+    "\xe3\x83\xa5\xe3\x83\xa6\xe3\x83\xa7\xe3\x83\xa8\xe3\x83\xa9"
+    "\xe3\x83\xaa\xe3\x83\xab\xe3\x83\xac\xe3\x83\xad\xe3\x83\xaf"
+    "\xe3\x83\xb2\xe3\x83\xb3\xe3\x83\xb4\xe3\x83\xbb\xe3\x83\xbc";
+
+  vtkDICOMCharacterSet cs1 = vtkDICOMCharacterSet::ISO_IR_13;
+  vtkDICOMCharacterSet cs2 = vtkDICOMCharacterSet::ISO_2022_IR_87;
+  std::string t = cs1.FromUTF8(katakana);
+  std::string u2 = cs1.ToUTF8(t);
+  std::string t2 = cs2.FromUTF8(u2);
+  std::string u3 = cs2.ToUTF8(t2);
+  TestAssert(u3 == katakana);
   }
 
   { // test compatibility mappings of jouyou kanji not in jis 0208
@@ -459,7 +596,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
     "CP1258",     "\x01\xff,",
     "KOI8",       "\x01\x7f,\x9a\x9a,\x9e\x9e,\xa3\xa4,\xa6\xa7,\xad\xae,"
                   "\xb3\xb4,\xb6\xb7,\xbd\xbe,\xbf\xff,",
-    NULL, NULL
+    nullptr, nullptr
   };
   for (int i = 0; sets[i]; i += 2)
   {
@@ -489,7 +626,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
     "ISO 2022 IR 13\\ISO 2022 IR 87",
     "\\ISO 2022 IR 87\\ISO 2022 IR 159",
     "ISO 2022 IR 13\\ISO 2022 IR 87\\ISO 2022 IR 159",
-    NULL
+    nullptr
   };
   const unsigned char keyJISX0201 = vtkDICOMCharacterSet::ISO_2022_IR_13;
   const unsigned char keys[2] = {
@@ -552,11 +689,11 @@ int TestDICOMCharacterSet(int argc, char *argv[])
         unsigned int range[2];
         const char *rnext = r;
         while (isalnum(*rnext)) { ++rnext; }
-        range[0] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+        range[0] = static_cast<unsigned int>(strtoul(r, nullptr, 16));
         TestAssert(*rnext == '-');
         r = ++rnext;
         while (isalnum(*rnext)) { ++rnext; }
-        range[1] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+        range[1] = static_cast<unsigned int>(strtoul(r, nullptr, 16));
         TestAssert(*rnext == ',');
         r = ++rnext;
 
@@ -601,7 +738,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
     "A6A1-A6B8,A6C1-A6D8,A7A1-A7C1,A7D1-A7F1,A8A1-A8BA,A8C5-A8E9,"
     "A9A4-A9EF,B0A1-D7F9,D8A1-F7FE,",
 
-    NULL, NULL, NULL
+    nullptr, nullptr, nullptr
   };
 
   for (int i = 0; sets[i]; i += 3)
@@ -630,11 +767,11 @@ int TestDICOMCharacterSet(int argc, char *argv[])
       unsigned int range[2];
       const char *rnext = r;
       while (isalnum(*rnext)) { ++rnext; }
-      range[0] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      range[0] = static_cast<unsigned int>(strtoul(r, nullptr, 16));
       TestAssert(*rnext == '-');
       r = ++rnext;
       while (isalnum(*rnext)) { ++rnext; }
-      range[1] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      range[1] = static_cast<unsigned int>(strtoul(r, nullptr, 16));
       TestAssert(*rnext == ',');
       r = ++rnext;
 
@@ -675,7 +812,7 @@ int TestDICOMCharacterSet(int argc, char *argv[])
     "84308130-8431A439," // U+FFFF end of BMP
     "90308130-9039FE39,E3308130-E3329A35,", // U+10FFFF
 
-    NULL, NULL
+    nullptr, nullptr
   };
 
   for (int i = 0; sets[i]; i += 2)
@@ -697,11 +834,11 @@ int TestDICOMCharacterSet(int argc, char *argv[])
       unsigned int range[2];
       const char *rnext = r;
       while (isalnum(*rnext)) { ++rnext; }
-      range[0] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      range[0] = static_cast<unsigned int>(strtoul(r, nullptr, 16));
       TestAssert(*rnext == '-');
       r = ++rnext;
       while (isalnum(*rnext)) { ++rnext; }
-      range[1] = static_cast<unsigned int>(strtoul(r, NULL, 16));
+      range[1] = static_cast<unsigned int>(strtoul(r, nullptr, 16));
       TestAssert(*rnext == ',');
       r = ++rnext;
 

@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -199,7 +199,7 @@ bool vtkDICOMSCGenerator::GenerateSCMultiFrameInstance(vtkInformation *info)
   int numComponents = scalarInfo->Get(
     vtkDataObject::FIELD_NUMBER_OF_COMPONENTS());
 
-  const char *SOPClass = 0;
+  const char *SOPClass = nullptr;
   if (scalarType == VTK_UNSIGNED_CHAR)
   {
     this->SetPixelRestrictions(

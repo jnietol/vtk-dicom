@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
         compiler->SetFileName(outpath);
         const char *instanceUID =
           data->Get(i, DC::SOPInstanceUID).GetCharData();
-        if (instanceUID == 0)
+        if (instanceUID == nullptr)
         {
           instanceUID =
             data->Get(i, DC::MediaStorageSOPInstanceUID).GetCharData();

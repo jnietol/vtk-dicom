@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2022 David Gobbi
+  Copyright (c) 2012-2024 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -91,12 +91,12 @@ vtkDICOMReader::vtkDICOMReader()
   this->RescaleIntercept = 0.0;
   this->DefaultCharacterSet = vtkDICOMCharacterSet::GetGlobalDefault();
   this->OverrideCharacterSet = vtkDICOMCharacterSet::GetGlobalOverride();
-  this->Parser = 0;
+  this->Parser = nullptr;
   this->Sorter = vtkDICOMSliceSorter::New();
   this->FileIndexArray = vtkIntArray::New();
   this->FrameIndexArray = vtkIntArray::New();
   this->StackIDs = vtkStringArray::New();
-  this->FileOffsetArray = 0;
+  this->FileOffsetArray = nullptr;
   this->MetaData = vtkDICOMMetaData::New();
   this->PatientMatrix = vtkMatrix4x4::New();
   this->MemoryRowOrder = vtkDICOMReader::BottomUp;
@@ -121,7 +121,7 @@ vtkDICOMReader::vtkDICOMReader()
   this->SwapBytes = 0;
 #endif
 
-  this->MedicalImageProperties = 0;
+  this->MedicalImageProperties = nullptr;
 
 #ifdef DICOM_USE_DCMTK
   DJDecoderRegistration::registerCodecs();
@@ -265,7 +265,7 @@ void vtkDICOMReader::PrintSelf(ostream& os, vtkIndent indent)
 //----------------------------------------------------------------------------
 void vtkDICOMReader::SetDesiredStackID(const char *stackId)
 {
-  if (stackId == 0)
+  if (stackId == nullptr)
   {
     stackId = "";
   }
@@ -506,7 +506,7 @@ bool vtkDICOMReader::ValidateStructure(
     {
       if (usedFiles[fileIndex] == 0) { continue; }
 
-      const char *errorText = 0;
+      const char *errorText = nullptr;
       vtkDICOMValue v = meta->Get(fileIndex, *tags);
       int i = 1;
       if (v.IsValid())
@@ -1799,7 +1799,7 @@ bool vtkDICOMReader::ReadFileDelegated(
   DcmFileFormat *fileformat = new DcmFileFormat();
   fileformat->loadFile(filename);
   OFCondition status = fileformat->getDataset()->chooseRepresentation(
-    EXS_LittleEndianExplicit, NULL);
+    EXS_LittleEndianExplicit, nullptr);
 
   if (!status.good())
   {
@@ -1847,9 +1847,15 @@ bool vtkDICOMReader::ReadFileDelegated(
   (void)fileIdx;
 
 #ifdef _WIN32
-  // Convert utf8 filename to local character set for gdcm
+  // Versions of gdcm < v3.0.1 don't support Win32 UNICODE,
+  // so convert utf8 filename to local ANSI code page instead
+#if GDCM_MAJOR_VERSION == 2 || \
+    (GDCM_MAJOR_VERSION == 3 && \
+     GDCM_MINOR_VERSION == 0 && \
+     GDCM_BUILD_VERSION == 0)
   vtkDICOMFilePath filePath(filename);
   filename = filePath.Local();
+#endif
 #endif
 
   gdcm::ImageReader reader;
@@ -2060,12 +2066,12 @@ int vtkDICOMReader::RequestData(
 
   bool flipImage = (this->MemoryRowOrder == vtkDICOMReader::BottomUp);
   bool planarToPacked = (numFileComponents != numComponents);
-  unsigned char *rowBuffer = 0;
+  unsigned char *rowBuffer = nullptr;
   if (flipImage)
   {
     rowBuffer = new unsigned char[fileRowSize];
   }
-  unsigned char *fileBuffer = 0;
+  unsigned char *fileBuffer = nullptr;
   int framesInPreviousFile = -1;
 
   // loop through all files in the update extent
@@ -2096,7 +2102,7 @@ int vtkDICOMReader::RequestData(
     }
 
     // this will point to the memory the file will be read into
-    unsigned char *bufferPtr = 0;
+    unsigned char *bufferPtr = nullptr;
 
     if (needBuffer)
     {
@@ -2213,7 +2219,7 @@ int vtkDICOMReader::RequestData(
   delete [] fileBuffer;
 
   this->UpdateProgress(1.0);
-  this->SetProgressText(0);
+  this->SetProgressText(nullptr);
   this->InvokeEvent(vtkCommand::EndEvent);
 
   return 1;
@@ -2249,12 +2255,12 @@ bool vtkDICOMReader::ReadOverlays(vtkImageData *data)
           this->MetaData->Get(fileIdx, vtkDICOMTag(g, 0x3000));
         unsigned int vl = overlayData.GetVL();
         const unsigned char *bptr = overlayData.GetUnsignedCharData();
-        if (bptr == 0)
+        if (bptr == nullptr)
         {
           bptr = reinterpret_cast<const unsigned char *>(
                    overlayData.GetUnsignedShortData());
         }
-        if (bptr == 0)
+        if (bptr == nullptr)
         {
           continue;
         }
@@ -2428,7 +2434,7 @@ void vtkDICOMReader::SetOverlayOutput(vtkImageData *data)
 //----------------------------------------------------------------------------
 vtkMedicalImageProperties *vtkDICOMReader::GetMedicalImageProperties()
 {
-  if (this->MedicalImageProperties == 0)
+  if (this->MedicalImageProperties == nullptr)
   {
     this->MedicalImageProperties = vtkMedicalImageProperties::New();
     this->UpdateMedicalImageProperties();
@@ -2447,10 +2453,10 @@ void vtkDICOMReader::UpdateMedicalImageProperties()
   const vtkDICOMValue *vptr;
   vptr = &meta->Get(DC::PatientName);
   properties->SetPatientName(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   vptr = &meta->Get(DC::PatientID);
   properties->SetPatientID(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   properties->SetPatientAge(meta->Get(DC::PatientAge).GetCharData());
   properties->SetPatientSex(meta->Get(DC::PatientSex).GetCharData());
   properties->SetPatientBirthDate(
@@ -2465,29 +2471,29 @@ void vtkDICOMReader::UpdateMedicalImageProperties()
   properties->SetSeriesNumber(meta->Get(DC::SeriesNumber).GetCharData());
   vptr = &meta->Get(DC::SeriesDescription);
   properties->SetSeriesDescription(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   vptr = &meta->Get(DC::StudyID);
   properties->SetStudyID(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   vptr = &meta->Get(DC::StudyDescription);
   properties->SetStudyDescription(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   properties->SetModality(meta->Get(DC::Modality).GetCharData());
   vptr = &meta->Get(DC::Manufacturer);
   properties->SetManufacturer(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   vptr = &meta->Get(DC::ManufacturerModelName);
   properties->SetManufacturerModelName(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   vptr = &meta->Get(DC::StationName);
   properties->SetStationName(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   vptr = &meta->Get(DC::InstitutionName);
   properties->SetInstitutionName(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   vptr = &meta->Get(DC::ConvolutionKernel);
   properties->SetConvolutionKernel(vptr->IsValid() ?
-    vptr->AsUTF8String().c_str() : NULL);
+    vptr->AsUTF8String().c_str() : nullptr);
   properties->SetSliceThickness(meta->Get(DC::SliceThickness).GetCharData());
   properties->SetKVP(meta->Get(DC::KVP).GetCharData());
   properties->SetGantryTilt(meta->Get(DC::GantryAngle).GetCharData());
