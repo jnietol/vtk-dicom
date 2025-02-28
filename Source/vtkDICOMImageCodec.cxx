@@ -18,7 +18,7 @@
 #include <stddef.h>
 
 //----------------------------------------------------------------------------
-const char *vtkDICOMImageCodec::UIDs[21] = {
+const char *vtkDICOMImageCodec::UIDs[24] = {
   "1.2.840.10008.1.2.1",     // LittleEndian
   "1.2.840.10008.1.2.2",     // BigEndian
   "1.2.840.10008.1.2.5",     // RLE
@@ -28,8 +28,8 @@ const char *vtkDICOMImageCodec::UIDs[21] = {
   "1.2.840.10008.1.2.4.70",  // JPEGPrediction
   "1.2.840.10008.1.2.4.80",  // JPEGLS
   "1.2.840.10008.1.2.4.81",  // JPEGLSConstrained
-  "1.2.840.10008.1.2.4.90",  // JPEG2K
-  "1.2.840.10008.1.2.4.91",  // JPEG2KLossless
+  "1.2.840.10008.1.2.4.90",  // JPEG2KLossless
+  "1.2.840.10008.1.2.4.91",  // JPEG2K
   "1.2.840.10008.1.2.4.100", // MPEG2ML
   "1.2.840.10008.1.2.4.101", // MPEG2HL
   "1.2.840.10008.1.2.4.102", // MPEG4HPL41
@@ -39,6 +39,9 @@ const char *vtkDICOMImageCodec::UIDs[21] = {
   "1.2.840.10008.1.2.4.106", // MPEG4HPL42Stereo
   "1.2.840.10008.1.2.4.107", // HEVCMPL51
   "1.2.840.10008.1.2.4.108", // HEVCM10PL51
+  "1.2.840.10008.1.2.4.110", // JPEGXLLossless
+  "1.2.840.10008.1.2.4.111", // JPEGXLRecomp
+  "1.2.840.10008.1.2.4.112", // JPEGXL
   nullptr
 };
 

@@ -60,6 +60,7 @@
 #ifndef _WIN32
 #undef HAVE_CONFIG_H
 #endif
+#include <mutex> /* for codec registration */
 #elif defined(DICOM_USE_GDCM)
 #include "gdcmImageReader.h"
 #endif
@@ -123,11 +124,7 @@ vtkDICOMReader::vtkDICOMReader()
 
   this->MedicalImageProperties = nullptr;
 
-#ifdef DICOM_USE_DCMTK
-  DJDecoderRegistration::registerCodecs();
-  DJLSDecoderRegistration::registerCodecs();
-  DcmRLEDecoderRegistration::registerCodecs();
-#endif
+  vtkDICOMReader::RegisterCodecs();
 
   // the main image and the overlay are the two outputs
   this->SetNumberOfOutputPorts(2);
@@ -136,11 +133,7 @@ vtkDICOMReader::vtkDICOMReader()
 //----------------------------------------------------------------------------
 vtkDICOMReader::~vtkDICOMReader()
 {
-#ifdef DICOM_USE_DCMTK
-  DcmRLEDecoderRegistration::cleanup();
-  DJLSDecoderRegistration::cleanup();
-  DJDecoderRegistration::cleanup();
-#endif
+  vtkDICOMReader::UnRegisterCodecs();
 
   if (this->Parser)
   {
@@ -2197,7 +2190,6 @@ int vtkDICOMReader::RequestData(
             do { *tmpOutPtr++ = *tmpInPtr++; } while (--n);
             tmpOutPtr += pixelSize - filePixelSize;
           }
-          slicePtr += filePixelSize;
         }
         else if (slicePtr != planePtr)
         {
@@ -2205,6 +2197,18 @@ int vtkDICOMReader::RequestData(
         }
 
         planePtr += filePlaneSize;
+
+        if (planarToPacked)
+        {
+          // the next input plane maps to the next output component
+          slicePtr += filePixelSize;
+        }
+      }
+
+      if (planarToPacked)
+      {
+        // adjust output pointer back to the first component
+        slicePtr -= filePixelSize*numPlanes;
       }
 
       // convert to RGB if data was read from file as YUV
@@ -2538,4 +2542,65 @@ void vtkDICOMReader::UpdateMedicalImageProperties()
     }
   }
   properties->SetDirectionCosine(dircos);
+}
+
+//----------------------------------------------------------------------------
+// Static variable initialization is managed by Schwarz counter
+#ifdef DICOM_USE_DCMTK
+static unsigned int vtkDICOMReaderInitializerCounter;
+static unsigned int vtkDICOMReaderCodecReferenceCount;
+static std::mutex* vtkDICOMReaderCodecMutex;
+#endif
+
+//----------------------------------------------------------------------------
+void vtkDICOMReader::RegisterCodecs()
+{
+#ifdef DICOM_USE_DCMTK
+  const std::lock_guard<std::mutex> lock(*vtkDICOMReaderCodecMutex);
+  if (vtkDICOMReaderCodecReferenceCount++ == 0)
+  {
+    DJDecoderRegistration::registerCodecs();
+    DJLSDecoderRegistration::registerCodecs();
+    DcmRLEDecoderRegistration::registerCodecs();
+  }
+#endif
+}
+
+//----------------------------------------------------------------------------
+void vtkDICOMReader::UnRegisterCodecs()
+{
+#ifdef DICOM_USE_DCMTK
+  const std::lock_guard<std::mutex> lock(*vtkDICOMReaderCodecMutex);
+  if (--vtkDICOMReaderCodecReferenceCount == 0)
+  {
+    DcmRLEDecoderRegistration::cleanup();
+    DJLSDecoderRegistration::cleanup();
+    DJDecoderRegistration::cleanup();
+  }
+#endif
+}
+
+//----------------------------------------------------------------------------
+// Perform initialization of static variables.
+vtkDICOMReaderInitializer::vtkDICOMReaderInitializer()
+{
+#ifdef DICOM_USE_DCMTK
+  if (vtkDICOMReaderInitializerCounter++ == 0)
+  {
+    vtkDICOMReaderCodecReferenceCount = 0;
+    vtkDICOMReaderCodecMutex = new std::mutex;
+  }
+#endif
+}
+
+//----------------------------------------------------------------------------
+// Perform cleanup of static variables.
+vtkDICOMReaderInitializer::~vtkDICOMReaderInitializer()
+{
+#ifdef DICOM_USE_DCMTK
+  if (--vtkDICOMReaderInitializerCounter == 0)
+  {
+    delete vtkDICOMReaderCodecMutex;
+  }
+#endif
 }

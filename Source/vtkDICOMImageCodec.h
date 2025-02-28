@@ -39,8 +39,8 @@ public:
     JPEGPrediction,    // 1.2.4.70  JPEG lossless prediction (14)
     JPEGLS,            // 1.2.4.80  JPEG-LS
     JPEGLSConstrained, // 1.2.4.81  JPEG-LS constrained error
-    JPEG2K,            // 1.2.4.90  JPEG 2000 lossless
-    JPEG2KLossless,    // 1.2.4.91  JPEG 2000 lossless/lossy
+    JPEG2KLossless,    // 1.2.4.90  JPEG 2000 lossless
+    JPEG2K,            // 1.2.4.91  JPEG 2000 lossless/lossy
     MPEG2ML,           // 1.2.4.100 MPEG2 ML
     MPEG2HL,           // 1.2.4.101 MPEG2 HL
     MPEG4HPL41,        // 1.2.4.102 MPEG4 AVC/H.264 High Profile / Level 4.1
@@ -50,6 +50,9 @@ public:
     MPEG4HPL42Stereo,  // 1.2.4.106 MPEG4 AVC/H.264 Stereo High Profile / 4.2
     HEVCMPL51,         // 1.2.4.107 HEVC/H.265 Main Profile / 5.1
     HEVCM10PL51,       // 1.2.4.108 HEVC/H.265 Main 10 Profile / 5.1
+    JPEGXLLossless,    // 1.2.4.110 JPEG XL Lossless
+    JPEGXLRecomp,      // 1.2.4.111 JPEG XL JPEG Recompression
+    JPEGXL,            // 1.2.4.112 JPEG XL
     NumberOfCodecs
   };
 
@@ -142,7 +145,7 @@ public:
 
 private:
   unsigned char Key;
-  static const char *UIDs[21];
+  static const char *UIDs[24];
 
   static int DecodeRLE(
     const ImageFormat& image,
