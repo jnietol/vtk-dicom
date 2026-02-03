@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -84,6 +84,9 @@ private:
 };
 
 //! A const iterator for a vtkDataElement list.
+/*!
+ *  An iterator is only valid until the next modification of the data set.
+ */
 class VTKDICOM_EXPORT vtkDICOMDataElementIterator
 {
 public:
@@ -93,21 +96,21 @@ public:
 
   //@{
   vtkDICOMDataElementIterator& operator++() {
-    if (this->Pointer) { this->Pointer = this->Pointer->Next; }
+    this->Pointer = this->Pointer->Next;
     return *this; }
 
   vtkDICOMDataElementIterator operator++(int) {
     const vtkDICOMDataElement *ptr = this->Pointer;
-    if (ptr) { this->Pointer = this->Pointer->Next; }
+    this->Pointer = this->Pointer->Next;
     return vtkDICOMDataElementIterator(ptr); }
 
   vtkDICOMDataElementIterator& operator--() {
-    if (this->Pointer) { this->Pointer = this->Pointer->Prev; }
+    this->Pointer = this->Pointer->Prev;
     return *this; }
 
   vtkDICOMDataElementIterator operator--(int) {
     const vtkDICOMDataElement *ptr = this->Pointer;
-    if (ptr) { this->Pointer = this->Pointer->Prev; }
+    this->Pointer = this->Pointer->Prev;
     return vtkDICOMDataElementIterator(ptr); }
   //@}
 

@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -16,7 +16,6 @@
 
 #include "vtkObject.h"
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 #include "vtkDICOMTag.h" // For vtkDICOMTag
 
 // Declare VTK classes within VTK's optional namespace
@@ -43,7 +42,7 @@ class VTKDICOM_EXPORT vtkDICOMSliceSorter : public vtkObject
 {
 public:
   vtkTypeMacro(vtkDICOMSliceSorter,vtkObject);
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
   static vtkDICOMSliceSorter *New();
 
   //@{
@@ -191,7 +190,7 @@ public:
 
 protected:
   vtkDICOMSliceSorter();
-  ~vtkDICOMSliceSorter() VTK_DICOM_OVERRIDE;
+  ~vtkDICOMSliceSorter() override;
 
   // Sort the input files, put the sort in the supplied arrays.
   virtual void SortFiles(vtkIntArray *fileArray, vtkIntArray *frameArray);
@@ -227,13 +226,8 @@ protected:
   vtkDICOMTag TimeSequence;
 
 private:
-#ifdef VTK_DICOM_DELETE
-  vtkDICOMSliceSorter(const vtkDICOMSliceSorter&) VTK_DICOM_DELETE;
-  void operator=(const vtkDICOMSliceSorter&) VTK_DICOM_DELETE;
-#else
   vtkDICOMSliceSorter(const vtkDICOMSliceSorter&) = delete;
   void operator=(const vtkDICOMSliceSorter&) = delete;
-#endif
 };
 
 #endif

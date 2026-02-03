@@ -37,7 +37,6 @@
 
 #include "vtkImageReader2.h"
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 
 // Declare VTK classes within VTK's optional namespace
 #if defined(VTK_ABI_NAMESPACE_BEGIN)
@@ -63,19 +62,19 @@ public:
   vtkTypeMacro(vtkNIFTIReader, vtkImageReader2);
 
   //! Print information about this object.
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   //@{
   //! Valid extensions for this file type.
-  const char* GetFileExtensions() VTK_DICOM_OVERRIDE {
+  const char* GetFileExtensions() override {
     return ".nii .nii.gz .img .img.gz .hdr .hdr.gz"; }
 
   //! Return a descriptive name that might be useful in a GUI.
-  const char* GetDescriptiveName() VTK_DICOM_OVERRIDE {
+  const char* GetDescriptiveName() override {
     return "NIfTI"; }
 
   //! Return true if this reader can read the given file.
-  int CanReadFile(const char* filename) VTK_DICOM_OVERRIDE;
+  int CanReadFile(const char* filename) override;
   //@}
 
   //@{
@@ -175,17 +174,17 @@ public:
 
 protected:
   vtkNIFTIReader();
-  ~vtkNIFTIReader() VTK_DICOM_OVERRIDE;
+  ~vtkNIFTIReader() override;
 
   //! Read the header information.
   int RequestInformation(
     vtkInformation* request, vtkInformationVector** inputVector,
-    vtkInformationVector* outputVector) VTK_DICOM_OVERRIDE;
+    vtkInformationVector* outputVector) override;
 
   //! Read the voxel data.
   int RequestData(
     vtkInformation* request, vtkInformationVector** inputVector,
-    vtkInformationVector* outputVector) VTK_DICOM_OVERRIDE;
+    vtkInformationVector* outputVector) override;
 
   //! Doe a case-insensitive check for the given extension.
   /*!
@@ -238,13 +237,8 @@ protected:
   bool PlanarRGB;
 
 private:
-#ifdef VTK_DICOM_DELETE
-  vtkNIFTIReader(const vtkNIFTIReader&) VTK_DICOM_DELETE;
-  void operator=(const vtkNIFTIReader&) VTK_DICOM_DELETE;
-#else
   vtkNIFTIReader(const vtkNIFTIReader&) = delete;
   void operator=(const vtkNIFTIReader&) = delete;
-#endif
 };
 
 #endif // vtkNIFTIReader_h

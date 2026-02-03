@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -33,16 +33,20 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <algorithm> // for std::min
+
 #define MAX_INDENT 24
 #define INDENT_SIZE 2
-#define MAX_LENGTH 120
+
+// for convenience when specifying VRs
+typedef vtkDICOMVR VR;
 
 // print the version
 void printVersion(FILE *file, const char *cp)
 {
   fprintf(file, "%s %s\n", cp, DICOM_VERSION);
   fprintf(file, "\n"
-    "Copyright (c) 2012-2024, David Gobbi.\n\n"
+    "Copyright (c) 2012-2025, David Gobbi.\n\n"
     "This software is distributed under an open-source license.  See the\n"
     "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
 }
@@ -56,6 +60,8 @@ void printUsage(FILE *file, const char *cp)
     "  -k tag          Provide a tag or key to be printed.\n"
     "  -q <query.txt>  Provide a file that lists which elements to print.\n"
     "  --charset <cs>  Charset to use if SpecificCharacterSet is missing.\n"
+    "  --force-charset <cs> Force override of SpecificCharacterSet with <cs>.\n"
+    "  --maxlen <l>    Maximum number of characters to print for a value.\n"
     "  --help          Print a brief help message.\n"
     "  --version       Print the software version.\n");
 }
@@ -83,7 +89,18 @@ void printHelp(FILE *file, const char *cp)
     "cannot be decoded with the SpecificCharacterSet of the DICOM file.  A\n"
     "backslash itself will be replaced by its byte value \"\\134\" if the VR is\n"
     "ST, LT or UT (that is, any VR where backslash isn't used as a separator\n"
-    "for multi-valued attributes).\n\n");
+    "for multi-valued attributes).\n"
+    "\n"
+    "The \"--maxlen\" option sets the maximum number of characters to print for\n"
+    "a value (default 120).  If the value is over this length, then it will be\n"
+    "truncated and \"...\" will be appended.\n"
+    "\n"
+    "A warning of the form \"#(gggg,eeee) XX/YY explict/dictionary VR mismatch\"\n"
+    "will be printed if any dataset element has an explicit VR that differs\n"
+    "from dicomdump's internal dictionary.  This warning occurs most often for\n"
+    "private elements, especially for old datasets.  It could indicate that the\n"
+    "dictionary is wrong, or that the dataset conformed to a different revision\n"
+    "of the dictionary, or that the dataset VR was incorrectly set.\n\n");
 }
 
 // remove path portion of filename
@@ -94,11 +111,53 @@ const char *fileBasename(const char *filename)
   return cp;
 }
 
+// count code points in the output from ToSafeUTF8 up to a limit:
+//     l = number of bytes in string (must not split last utf-8 sequence)
+//     m = desired number of utf-8 code points
+//     *mp = gives number of utf-8 code points read
+//     returns number of input bytes read
+// if return value == l after execution, end of string was reached
+// if *mp == m after execution, reached desired utf-8 count
+size_t countSafeUTF8(const char *cp, size_t l, size_t m, size_t *mp=nullptr)
+{
+  size_t remainingOctalDigits = 0;
+  size_t codeCount = 0;
+  size_t i;
+  for (i = 0; i < l; i++)
+  {
+    if (remainingOctalDigits && cp[i] >= '0' && cp[i] <= '7')
+    {
+      --remainingOctalDigits;
+    }
+    else if ((cp[i] & 0xC0) != 0x80) // not a utf-8 trail byte
+    {
+      if (codeCount == m)
+      {
+        break;
+      }
+      codeCount++;
+      // for SafeUTF8, backslash starts a three-digit octal byte code
+      remainingOctalDigits = 0;
+      if (cp[i] == '\\')
+      {
+        remainingOctalDigits = 3;
+      }
+    }
+  }
+
+  if (mp != nullptr)
+  {
+    *mp = codeCount;
+  }
+
+  return i;
+}
+
 // Print out one data element
 void printElement(
   vtkDICOMMetaData *meta, const vtkDICOMItem *item,
   const vtkDICOMDataElementIterator &iter, int depth,
-  unsigned int pixelDataVL)
+  unsigned int pixelDataVL, size_t maxlen)
 {
   vtkDICOMTag tag = iter->GetTag();
   int g = tag.GetGroup();
@@ -106,6 +165,15 @@ void printElement(
   vtkDICOMVR vr = iter->GetVR();
   const char *name = "";
   vtkDICOMDictEntry d;
+
+  // make an indentation string
+  if (INDENT_SIZE*depth > MAX_INDENT)
+  {
+    depth = MAX_INDENT/INDENT_SIZE;
+  }
+  static const char spaces[MAX_INDENT+1] = "                        ";
+  const char *indent = spaces + (MAX_INDENT - INDENT_SIZE*depth);
+
   if (item)
   {
     d = item->FindDictEntry(tag);
@@ -123,8 +191,8 @@ void printElement(
         !(d.GetVR() == vtkDICOMVR::OX &&
           (vr == vtkDICOMVR::OB || vr == vtkDICOMVR::OW)))
     {
-      printf("VR mismatch! %s != %s %s\n",
-             vr.GetText(), d.GetVR().GetText(), name);
+      printf("%s#(%04X,%04X) %s/%s explicit/dictionary VR mismatch\n",
+             indent, g, e, vr.GetText(), d.GetVR().GetText());
     }
   }
   else if ((tag.GetGroup() & 0xFFFE) != 0 && tag.GetElement() == 0)
@@ -148,14 +216,6 @@ void printElement(
     vn = 1;
   }
 
-  // make an indentation string
-  if (INDENT_SIZE*depth > MAX_INDENT)
-  {
-    depth = MAX_INDENT/INDENT_SIZE;
-  }
-  static const char spaces[MAX_INDENT+1] = "                        ";
-  const char *indent = spaces + (MAX_INDENT - INDENT_SIZE*depth);
-
   for (size_t vi = 0; vi < vn; vi++)
   {
     v = vp[vi];
@@ -178,36 +238,48 @@ void printElement(
              vr == vtkDICOMVR::UT)
     {
       vtkDICOMCharacterSet cs = v.GetCharacterSet();
+      bool simpleSingleByte = (cs.IsISO8859() ||
+                               cs == vtkDICOMCharacterSet::ISO_IR_6 ||
+                               cs == vtkDICOMCharacterSet::ISO_IR_13);
       const char *cp = v.GetCharData();
       size_t l = vl;
-      bool truncated = false;
       while (l > 0 && cp[l-1] == ' ')
       {
         l--;
       }
-      if (l > MAX_LENGTH)
+      if (l > maxlen)
       {
-        l = MAX_LENGTH;
-        truncated = true;
-      }
-      std::string utf8 = cs.ToSafeUTF8(cp, l);
-      cp = utf8.data();
-      l = utf8.length();
-      if (l > MAX_LENGTH)
-      {
-        l = MAX_LENGTH-3;
-        truncated = true;
-        // remove possibly incomplete final character
-        while (l > 1 && (cp[l-1] & 0xC0) == 0x80)
+        // loop, increasing ltry each time
+        for (size_t ltry = maxlen;; ltry += std::min(l - ltry, maxlen))
         {
-          l--;
+          if (!simpleSingleByte)
+          {
+            // ensure that 'ltry' does not split a character code, by
+            // advancing to just before the next space or control code
+            while (ltry < l && static_cast<unsigned char>(cp[ltry]) > 0x20)
+            {
+              ltry++;
+            }
+          }
+          // create utf8 string and compare to max allowed output length
+          s = cs.ToSafeUTF8(cp, ltry);
+          size_t n;
+          size_t m = countSafeUTF8(s.data(), s.size(), maxlen, &n);
+          if (n == maxlen && (m < s.size() || ltry < l))
+          {
+            s.resize(m);
+            s.append("...");
+            break;
+          }
+          if (ltry == l)
+          {
+            break;
+          }
         }
-        l--;
       }
-      s.append(cp, l);
-      if (truncated)
+      else
       {
-        s.append("...");
+        s = cs.ToSafeUTF8(cp, l);
       }
     }
     else if (vr.HasTextValue())
@@ -216,33 +288,53 @@ void printElement(
       const char *cp = v.GetCharData();
       const char *ep = cp + vl;
       size_t pos = 0;
+      size_t posCount = 0;
       while (cp != ep && *cp != '\0')
       {
+        // locate the next separator
         size_t n = cs.NextBackslash(cp, ep);
+        // strip leading, trailing whitespace
         while (n > 0 && *cp == ' ') { cp++; n--; }
         size_t m = n;
         while (m > 0 && cp[m-1] == ' ') { m--; }
+        // perform charset conversion (if needed) and advance
         s.append(cs.ToSafeUTF8(cp, m));
         cp += n;
-        if (cp != ep && *cp == '\\')
+        // count the number of unicode code points for this value
+        size_t addCount;
+        size_t ll = countSafeUTF8(s.data() + pos, s.size() - pos,
+                                  maxlen - posCount, &addCount);
+        // check if truncation is required
+        if (s.size() > pos + ll)
         {
-          s.append(cp, 1);
-          cp++;
-        }
-        if (s.size() > MAX_LENGTH-4)
-        {
-          s.resize(pos);
+          s.resize(pos + ll);
           s.append("...");
           break;
         }
+        // get current position in utf-8 string, and number of code points
         pos = s.size();
+        posCount += addCount;
+        // add the separator
+        if (cp != ep && *cp == '\\')
+        {
+          if (posCount < maxlen)
+          {
+            s.append(cp, 1);
+            cp++;
+            posCount++;
+          }
+          else
+          {
+            s.append("...");
+            break;
+          }
+        }
       }
     }
     else
     {
       // print any other VR via conversion to string
       size_t n = v.GetNumberOfValues();
-      size_t pos = 0;
       for (size_t i = 0; i < n; i++)
       {
         v.AppendValueToString(s, i);
@@ -250,13 +342,12 @@ void printElement(
         {
           s.append("\\");
         }
-        if (s.size() > MAX_LENGTH-4)
+        if (s.size() > maxlen)
         {
-          s.resize(pos);
+          s.resize(maxlen);
           s.append("...");
           break;
         }
-        pos = s.size();
       }
     }
 
@@ -288,7 +379,7 @@ void printElement(
 
         for (; siter != siterEnd; ++siter)
         {
-          printElement(meta, &items[j], siter, depth+1, pixelDataVL);
+          printElement(meta, &items[j], siter, depth+1, pixelDataVL, maxlen);
         }
       }
     }
@@ -333,7 +424,7 @@ void printElement(
 
 void printElementFromTagPathRecurse(
   const vtkDICOMItem *item, const vtkDICOMTagPath& tagPath,
-  const vtkDICOMTagPath& fullPath, int *count)
+  const vtkDICOMTagPath& fullPath, int *count, size_t maxlen)
 {
   vtkDICOMTag tag = tagPath.GetHead();
 
@@ -354,7 +445,7 @@ void printElementFromTagPathRecurse(
         for (size_t i = 0; i < n; i++)
         {
           printElementFromTagPathRecurse(
-            &items[i], tagPath.GetTail(), fullPath, count);
+            &items[i], tagPath.GetTail(), fullPath, count, maxlen);
         }
       }
     }
@@ -362,14 +453,14 @@ void printElementFromTagPathRecurse(
     {
       ++(*count);
       fprintf(stdout, "  %04d", *count);
-      printElement(nullptr, item, iter, 0, 0);
+      printElement(nullptr, item, iter, 0, 0, maxlen);
     }
   }
 }
 
 void printElementFromTagPath(
   vtkDICOMMetaData *data, const vtkDICOMTagPath& tagPath,
-  unsigned int pixelDataVL)
+  unsigned int pixelDataVL, size_t maxlen)
 {
   int count = 0;
   vtkDICOMTag tag = tagPath.GetHead();
@@ -409,7 +500,7 @@ void printElementFromTagPath(
             for (size_t i = 0; i < n; i++)
             {
               printElementFromTagPathRecurse(
-                &items[i], tagPath.GetTail(), tagPath, &count);
+                &items[i], tagPath.GetTail(), tagPath, &count, maxlen);
             }
           }
         }
@@ -423,14 +514,14 @@ void printElementFromTagPath(
           for (size_t i = 0; i < n; i++)
           {
             printElementFromTagPathRecurse(
-              &items[i], tagPath.GetTail(), tagPath, &count);
+              &items[i], tagPath.GetTail(), tagPath, &count, maxlen);
           }
         }
       }
     }
     else
     {
-      printElement(data, nullptr, iter, 0, pixelDataVL);
+      printElement(data, nullptr, iter, 0, pixelDataVL, maxlen);
     }
   }
 }
@@ -447,8 +538,15 @@ int MAINMACRO(int argc, char *argv[])
   QueryTagList qtlist;
   vtkDICOMItem query;
 
+  // always query SpecificCharacterSet
+  query.Set(DC::SpecificCharacterSet, vtkDICOMValue(VR::CS));
+
   // for the default character set
   vtkDICOMCharacterSet charset;
+  bool forceCharset = false;
+
+  // for the maximum value length to print
+  size_t maxlen = 120;
 
   if (argc < 2)
   {
@@ -510,7 +608,8 @@ int MAINMACRO(int argc, char *argv[])
         return 1;
       }
     }
-    else if (strcmp(arg, "--charset") == 0)
+    else if (strcmp(arg, "--charset") == 0 ||
+             strcmp(arg, "--force-charset") == 0)
     {
       ++argi;
       if (argi == argc || argv[argi][0] == '-')
@@ -519,12 +618,32 @@ int MAINMACRO(int argc, char *argv[])
                 arg);
         return 1;
       }
+      if (strncmp(arg, "--force-", 8) == 0)
+      {
+        forceCharset = true;
+      }
       charset = vtkDICOMCharacterSet(argv[argi]);
       if (charset.GetKey() == vtkDICOMCharacterSet::Unknown)
       {
         fprintf(stderr, "%s %s is not a known character set\n\n",
                 arg, argv[argi]);
         return 1;
+      }
+    }
+    else if (strcmp(arg, "--maxlen") == 0)
+    {
+      ++argi;
+      if (argi == argc || argv[argi][0] == '-' ||
+          argv[argi][0] < '0' || argv[argi][0] > '9')
+      {
+        fprintf(stderr, "%s must be followed by an integer\n\n",
+                arg);
+        return 1;
+      }
+      maxlen = atol(argv[argi]);
+      if (maxlen >= 0xffffffff)
+      {
+        maxlen = 0xffffffff;
       }
     }
     else if (arg[0] == '-')
@@ -540,32 +659,57 @@ int MAINMACRO(int argc, char *argv[])
   }
 
   // sort the files by study and series
-  vtkSmartPointer<vtkDICOMDirectory> sorter =
-    vtkSmartPointer<vtkDICOMDirectory>::New();
-  sorter->RequirePixelDataOff();
-  sorter->SetScanDepth(0);
-  sorter->IgnoreDicomdirOn();
-  sorter->SetFindQuery(query);
-  sorter->SetInputFileNames(files);
-  sorter->Update();
+  vtkSmartPointer<vtkDICOMDirectory> sorter;
+  bool useSorter = false;
+  if (files->GetNumberOfValues() > 1)
+  {
+    useSorter = true;
+    sorter = vtkSmartPointer<vtkDICOMDirectory>::New();
+    sorter->RequirePixelDataOff();
+    sorter->SetScanDepth(0);
+    sorter->IgnoreDicomdirOn();
+    if (!qtlist.empty())
+    {
+      sorter->SetFindQuery(query);
+    }
+    sorter->SetInputFileNames(files);
+    sorter->Update();
+  }
 
   vtkSmartPointer<vtkDICOMParser> parser =
     vtkSmartPointer<vtkDICOMParser>::New();
   parser->SetDefaultCharacterSet(charset);
-  parser->SetQueryItem(query);
+  parser->SetOverrideCharacterSet(forceCharset);
+  if (!qtlist.empty())
+  {
+    parser->SetQueryItem(query);
+  }
 
   vtkSmartPointer<vtkDICOMMetaData> data =
     vtkSmartPointer<vtkDICOMMetaData>::New();
   parser->SetMetaData(data);
 
-  int m = sorter->GetNumberOfStudies();
+  int m = (files->GetNumberOfValues() > 0 ? 1 : 0);
+  if (useSorter)
+  {
+    m = sorter->GetNumberOfStudies();
+  }
   for (int j = 0; j < m; j++)
   {
-    int k = sorter->GetFirstSeriesForStudy(j);
-    int kl = sorter->GetLastSeriesForStudy(j);
-    for (; k <= kl; k++)
+    int k = 0;
+    int kmax = 0;
+    if (useSorter)
     {
-      vtkStringArray *a = sorter->GetFileNamesForSeries(k);
+      k = sorter->GetFirstSeriesForStudy(j);
+      kmax = sorter->GetLastSeriesForStudy(j);
+    }
+    for (; k <= kmax; k++)
+    {
+      vtkStringArray *a = files;
+      if (useSorter)
+      {
+        a = sorter->GetFileNamesForSeries(k);
+      }
       vtkIdType l = a->GetNumberOfValues();
       std::string fname = a->GetValue(0);
       if (l == 1)
@@ -601,11 +745,17 @@ int MAINMACRO(int argc, char *argv[])
         pixelDataVL = parser->GetPixelDataVL();
       }
 
-      if (query.GetNumberOfDataElements() > 0)
+      if (!qtlist.empty())
       {
         for (size_t i = 0; i < qtlist.size(); i++)
         {
-          printElementFromTagPath(data, qtlist[i], pixelDataVL);
+          // TODO: resolving the path here, instead of during
+          // the iteration along the path, means that the
+          // instance (or item #) used for resolution might
+          // be different than the one being printed
+          vtkDICOMTagPath mpath = dicomcli_resolve_tagpath(
+            data, 0, qtlist[i], &query);
+          printElementFromTagPath(data, mpath, pixelDataVL, maxlen);
         }
       }
       else
@@ -615,7 +765,7 @@ int MAINMACRO(int argc, char *argv[])
 
         for (; iter != iterEnd; ++iter)
         {
-          printElement(data, nullptr, iter, 0, pixelDataVL);
+          printElement(data, nullptr, iter, 0, pixelDataVL, maxlen);
         }
       }
     }

@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -15,7 +15,6 @@
 #define progress_h
 
 #include "vtkCommand.h"
-#include "vtkDICOMConfig.h"
 
 // Capture progress events
 class ProgressObserver : public vtkCommand
@@ -24,8 +23,7 @@ public:
   static ProgressObserver *New() { return new ProgressObserver; }
   vtkTypeMacro(ProgressObserver,vtkCommand);
   void Execute(
-    vtkObject *caller, unsigned long eventId, void *callData)
-    VTK_DICOM_OVERRIDE;
+    vtkObject *caller, unsigned long eventId, void *callData) override;
   void SetText(const char *text) { this->Text = text; }
 protected:
   ProgressObserver() : Stage(0), Anim(0), LastTime(0), Text("") {}

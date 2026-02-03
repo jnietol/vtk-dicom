@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -629,6 +629,66 @@ vtkDICOMItem *vtkDICOMMetaData::FindItemOrInsert(
 }
 
 //----------------------------------------------------------------------------
+void vtkDICOMMetaData::SplitAndSetValue(
+  vtkDICOMValue *vptr, int idx, const vtkDICOMValue& v)
+{
+  // split a value that used to be the same for all indices so
+  // that it has a different value for 'idx'
+  int n = this->NumberOfInstances;
+  vtkDICOMValue l;
+  vtkDICOMVR vr = (vptr->IsValid() ? vptr->GetVR() : v.GetVR());
+  vtkDICOMValue *sptr = l.AllocateMultiplexData(vr, n);
+  for (int i = 0; i < n; i++)
+  {
+    if (i == idx)
+    {
+      sptr[i] = v;
+    }
+    else
+    {
+      sptr[i] = *vptr;
+    }
+  }
+  *vptr = l;
+}
+
+//----------------------------------------------------------------------------
+// Insert an attribute for a particular image
+vtkDICOMDataElementIterator vtkDICOMMetaData::InsertOrAssign(
+  int idx, vtkDICOMTag tag, const vtkDICOMValue& v)
+{
+  vtkDICOMDataElement *loc = this->FindDataElementOrInsert(tag);
+  if (loc == nullptr)
+  {
+    vtkErrorMacro("InsertOrAssign: tag group number must not be zero.");
+    return &this->Tail;
+  }
+  else if (!v.IsValid())
+  {
+    vtkErrorMacro("InsertOrAssign: a valid value is required.");
+    return &this->Tail;
+  }
+
+  loc->Tag = tag;
+  vtkDICOMValue *vptr = &loc->Value;
+
+  assert(idx >= 0 && idx < this->NumberOfInstances);
+
+  // is this a sequence of values?
+  vtkDICOMValue *sptr = vtkDICOMValueFriendMetaData::GetMultiplex(vptr);
+  if (sptr)
+  {
+    sptr[idx] = v;
+  }
+  else if (v != *vptr)
+  {
+    this->SplitAndSetValue(vptr, idx, v);
+  }
+
+  return vtkDICOMDataElementIterator(loc);
+}
+
+//----------------------------------------------------------------------------
 // Insert an attribute into the hash table
 void vtkDICOMMetaData::Set(vtkDICOMTag tag, const vtkDICOMValue& v)
 {
@@ -733,22 +793,7 @@ void vtkDICOMMetaData::Set(int idx, vtkDICOMTag tag, const vtkDICOMValue& v)
   {
     // differs from other instances, must turn value into a list,
     // so create a value that is actually a list of values
-    int n = this->NumberOfInstances;
-    vtkDICOMValue l;
-    vtkDICOMVR vr = (vptr->IsValid() ? vptr->GetVR() : v.GetVR());
-    sptr = l.AllocateMultiplexData(vr, n);
-    for (int i = 0; i < n; i++)
-    {
-      if (i == idx)
-      {
-        sptr[i] = v;
-      }
-      else
-      {
-        sptr[i] = *vptr;
-      }
-    }
-    *vptr = l;
+    this->SplitAndSetValue(vptr, idx, v);
   }
   else if (!vptr->IsValid())
   {
@@ -1127,8 +1172,22 @@ vtkDICOMTag vtkDICOMMetaData::ResolvePrivateTagForWriting(
   if (otag == vtkDICOMTag(0xFFFF, 0xFFFF))
   {
     unsigned short g = ptag.GetGroup();
-    for (unsigned short e = 0x0010; e <= 0x00FF; e++)
+    unsigned short pb = (ptag.GetElement() >> 8);
+    for (unsigned short cb = 0x0010; cb <= 0x00FF; cb++)
     {
+      // this code rearranges order so that pb (preferred block) is first
+      unsigned short e = cb;
+      if (pb > cb)
+      {
+        if (cb == 0x0010)
+        {
+          e = pb;
+        }
+        else
+        {
+          --e;
+        }
+      }
       vtkDICOMTag ctag(g, e);
       vtkDICOMDataElement *d = this->FindDataElementOrInsert(ctag);
       if (!d->Value.IsValid())
@@ -1164,10 +1223,14 @@ vtkDICOMDictEntry vtkDICOMMetaData::FindDictEntry(vtkDICOMTag tag)
   if ((group & 1) != 0 && element > 0x00ffu)
   {
     unsigned short creatorElement = (element >> 8);
-    element &= 0x00ffu;
-    tag = vtkDICOMTag(group, element);
     vtkDICOMTag creatorTag(group, creatorElement);
     dict = this->Get(creatorTag).GetCharData();
+    vtkDICOMDictEntry entry = vtkDICOMDictionary::FindDictEntry(
+      vtkDICOMTag(group, (element & 0x00ffu)), dict);
+    if (entry.IsValid())
+    {
+      return entry;
+    }
   }
 
   return vtkDICOMDictionary::FindDictEntry(tag, dict);

@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -17,7 +17,6 @@
 #include "vtkDataObject.h"
 #include "vtkStdString.h" // For std::string
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 #include "vtkDICOMDataElement.h" // For method parameter
 #include "vtkDICOMDictEntry.h" // For method parameter
 
@@ -50,7 +49,7 @@ public:
   vtkTypeMacro(vtkDICOMMetaData, vtkDataObject);
 
   //! Print a summary of the contents of this object.
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   //@{
   //! Get the number of instances (i.e. files).
@@ -70,7 +69,7 @@ public:
   void Clear();
 
   //! Remove all data elements and initialize all members.
-  void Initialize() VTK_DICOM_OVERRIDE;
+  void Initialize() override;
   //@}
 
   //@{
@@ -79,6 +78,9 @@ public:
     return this->NumberOfDataElements; }
 
   //! Get an iterator for the list of data elements.
+  /*!
+   *  The iterator is only valid until the next modification of the data set.
+   */
   vtkDICOMDataElementIterator Begin() {
     return this->Head.Next; }
 
@@ -90,11 +92,22 @@ public:
   //@{
   //! Get the iterator for a specific data element.
   /*!
+   *  The iterator is only valid until the next modification of the data set.
    *  If the element was not found, then End() will be returned.
    */
   vtkDICOMDataElementIterator Find(vtkDICOMTag tag) {
     vtkDICOMDataElement *e = this->FindDataElement(tag);
     return (e != nullptr ? e : &this->Tail); }
+  //@}
+
+  //@{
+  //! Set an attribute and get the iterator for its data element.
+  /*!
+   *  This is equivalent to doing Set() and Find() with only one lookup.
+   *  The iterator is only valid until the next modification of the data set.
+   */
+  vtkDICOMDataElementIterator InsertOrAssign(
+    int idx, vtkDICOMTag tag, const vtkDICOMValue& v);
   //@}
 
   //@{
@@ -282,6 +295,8 @@ public:
    *  resolve private tags that you plan to write to the data set.  The
    *  returned tag will be (ffff,ffff) if there are no empty slots available
    *  for the creator.  Every private group has 240 available slots.
+   *  If the private tag (gggg,xxee) has a non-zero value for xx, then
+   *  element (gggg,00xx) will be used for the creator if it is available.
    */
   vtkDICOMTag ResolvePrivateTagForWriting(
     vtkDICOMTag ptag, const std::string& creator);
@@ -334,13 +349,13 @@ public:
 
   //@{
   //! DataObject interface function.
-  void ShallowCopy(vtkDataObject *source) VTK_DICOM_OVERRIDE;
-  void DeepCopy(vtkDataObject *source) VTK_DICOM_OVERRIDE;
+  void ShallowCopy(vtkDataObject *source) override;
+  void DeepCopy(vtkDataObject *source) override;
   //@}
 
 protected:
   vtkDICOMMetaData();
-  ~vtkDICOMMetaData() VTK_DICOM_OVERRIDE;
+  ~vtkDICOMMetaData() override;
 
   //! Find a tag, value pair.
   vtkDICOMDataElement *FindDataElement(vtkDICOMTag tag);
@@ -362,6 +377,10 @@ protected:
   //! Find the attribute value for the specified image index.
   const vtkDICOMValue *FindAttributeValue(
     int idx, const vtkDICOMTagPath& tagpath);
+
+  //! Utility function to split one value into multiple values.
+  void SplitAndSetValue(
+    vtkDICOMValue *vptr, int idx, const vtkDICOMValue& v);
 
 private:
   //! The number of DICOM files.
@@ -385,13 +404,8 @@ private:
   //! An array to map slices and components to frames.
   vtkIntArray *FrameIndexArray;
 
-#ifdef VTK_DICOM_DELETE
-  vtkDICOMMetaData(const vtkDICOMMetaData&) VTK_DICOM_DELETE;
-  void operator=(const vtkDICOMMetaData&) VTK_DICOM_DELETE;
-#else
   vtkDICOMMetaData(const vtkDICOMMetaData&) = delete;
   void operator=(const vtkDICOMMetaData&) = delete;
-#endif
 };
 
 #endif /* vtkDICOMMetaData_h */

@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -235,6 +235,32 @@ const char *vtkDICOMWriter::GetFileSliceOrderAsString()
   }
 
   return text;
+}
+
+//----------------------------------------------------------------------------
+void vtkDICOMWriter::SetFilePattern(const char* pattern)
+{
+  if (this->FilePattern == nullptr && pattern == nullptr)
+  {
+    return;
+  }
+  if (this->FilePattern && pattern && (!strcmp(this->FilePattern, pattern)))
+  {
+    return;
+  }
+  delete[] this->FilePattern;
+  if (pattern)
+  {
+    size_t n = strlen(pattern) + 1;
+    char* cp1 = new char[n];
+    strcpy(cp1, pattern);
+    this->FilePattern = cp1;
+  }
+  else
+  {
+    this->FilePattern = nullptr;
+  }
+  this->Modified();
 }
 
 //----------------------------------------------------------------------------
@@ -475,7 +501,7 @@ void vtkDICOMWriter::GenerateOverlays(
   for (int i = 0; i < 6; i += 2)
   {
     extent[i] = std::max(extent[i], wholeExtent[i]);
-    extent[i+1] = std::max(extent[i+1], wholeExtent[i+1]);
+    extent[i+1] = std::min(extent[i+1], wholeExtent[i+1]);
     if (extent[i] > extent[i+1])
     {
       return;

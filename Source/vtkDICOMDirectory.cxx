@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -1743,10 +1743,10 @@ bool SimpleSQL::Open(const char *fname)
   // open in read-only mode
   uri += "?mode=ro";
 
-  // a read-only open will fail if the .sql-wal file is missing unless we
-  // use 'immutable' (this flag assumes that the file is static, unchanging)
+  // a read-only open will fail if the .sql-wal file is missing or unwritable
+  // unless we use 'immutable' (this flag assumes that the file is static)
   std::string walpath = fullpath + "-wal";
-  if (vtkDICOMFile::Access(walpath.c_str(), vtkDICOMFile::In) != 0)
+  if (vtkDICOMFile::Access(walpath.c_str(), vtkDICOMFile::Out) != 0)
   {
     uri += "&immutable=1";
   }
@@ -2718,7 +2718,7 @@ void vtkDICOMDirectory::Execute()
 }
 
 //----------------------------------------------------------------------------
-void vtkDICOMDirectory::Update(int)
+vtkDICOMAlgorithm::UpdateReturnType vtkDICOMDirectory::Update(int)
 {
   this->AbortExecute = 0;
 
@@ -2727,6 +2727,10 @@ void vtkDICOMDirectory::Update(int)
     this->Execute();
     this->UpdateTime.Modified();
   }
+
+#ifdef VTK_DICOM_UPDATE_RETURNS_BOOL
+  return (this->ErrorCode == 0);
+#endif
 }
 
 //----------------------------------------------------------------------------

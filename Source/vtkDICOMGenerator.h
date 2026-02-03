@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -17,7 +17,6 @@
 #include "vtkObject.h"
 #include "vtkStdString.h" // For std::string
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 #include "vtkDICOMTag.h" // For method parameter
 
 // Declare VTK classes within VTK's optional namespace
@@ -60,7 +59,7 @@ public:
   vtkTypeMacro(vtkDICOMGenerator, vtkObject);
 
   //! Print information about this object.
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   //@{
   //! Generate an instance of one of the supported classes.
@@ -252,7 +251,7 @@ protected:
   //@{
   //! Protected constructor method.
   vtkDICOMGenerator();
-  ~vtkDICOMGenerator() VTK_DICOM_OVERRIDE;
+  ~vtkDICOMGenerator() override;
   //@}
 
   //@{
@@ -517,13 +516,8 @@ protected:
   vtkIntArray *RangeArray;
 
 private:
-#ifdef VTK_DICOM_DELETE
-  vtkDICOMGenerator(const vtkDICOMGenerator&) VTK_DICOM_DELETE;
-  void operator=(const vtkDICOMGenerator&) VTK_DICOM_DELETE;
-#else
   vtkDICOMGenerator(const vtkDICOMGenerator&) = delete;
   void operator=(const vtkDICOMGenerator&) = delete;
-#endif
 };
 
 #endif // vtkDICOMGenerator_h

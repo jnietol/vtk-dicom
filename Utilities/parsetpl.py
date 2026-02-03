@@ -30,8 +30,11 @@ def parseline(line):
       break
     i = j + 2
     j = i
-    while line[j] != '\"':
-      j = j + 1
+    try:
+      while line[j] != '\"':
+        j = j + 1
+    except:
+      sys.stderr.write(line)
     val = line[i:j]
     i = j + 1
     entries[key] = val.strip()
@@ -52,28 +55,47 @@ def parseline(line):
     block = {}
     blocks[entries['Owner']] = block
 
-  block[tag] = entries
+  try:
+    # is this for a specific private block?
+    blocknumber = entries['PrivateBlock'][2:4]
+    tag = tag[0:6] + blocknumber + tag[8:]
+  except KeyError:
+    # if not, then force element to be 00xx
+    if tag[6:8] != '00':
+      sys.stderr.write("Tag != 00xx \"" + entries['Owner'] + "\" " +
+        tag + "\n")
+      tag = tag[0:6] + "00" + tag[8:]
 
-  #g = int(tag[1:5], 16)
-  #e = int(tag[6:10], 16)
+  try:
+    # check whether the tag is already defined
+    oldentries = block[tag.lower()]
+    # overwrite unless new definition has no keyword
+    if entries['Keyword'] and entries['Keyword'] != "?":
+      block[tag.lower()] = entries
+    # print any duplicate private tags to stderr
+    sys.stderr.write("Dup \"" + entries['Owner'] + "\" " +
+      tag.lower() + " " +
+      oldentries['VR'] + "/" + entries['VR'] + " " +
+      oldentries['VM'] + "/" + entries['VM'] + " " +
+      "\"" + oldentries['Keyword'] + "\"/\"" + entries['Keyword'] + "\"\n")
+  except KeyError:
+    block[tag.lower()] = entries
 
-  #tag = "(%04x,%04x)" % (g,e)
+  # save the tag itself as an attribute
+  entries['Tag'] = tag
 
 for filename in sys.argv[1:]:
   f = open(filename)
   for line in f.readlines():
     parseline(line)
 
-#print(len(blocks))
-
-for owner, block in blocks.items():
+for owner in sorted(blocks.keys()):
+  block = blocks[owner]
   lines = []
-  tags = block.keys()
 
-  tags.sort()
-  for tag in tags:
+  for tag in sorted(block.keys()):
     entries = block[tag]
-    lines.append(tag)
+    lines.append(entries['Tag'])
     lines.append(entries['Name'])
     lines.append(entries['Keyword'])
     lines.append(entries['VR'])

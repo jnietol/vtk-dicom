@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -17,7 +17,6 @@
 #include "vtkObject.h"
 #include "vtkStdString.h" // For std::string
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 #include "vtkDICOMCharacterSet.h" // For character sets
 
 // Declare VTK classes within VTK's optional namespace
@@ -54,7 +53,7 @@ public:
   vtkTypeMacro(vtkDICOMParser, vtkObject);
 
   //! Print a summary of the contents of this object.
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   //@{
   //! Set the file name.
@@ -175,7 +174,7 @@ public:
 
 protected:
   vtkDICOMParser();
-  ~vtkDICOMParser() VTK_DICOM_OVERRIDE;
+  ~vtkDICOMParser() override;
 
   //! Internal method for filling the buffer.
   /*!
@@ -260,13 +259,8 @@ protected:
   friend class vtkDICOMParserInternalFriendship;
 
 private:
-#ifdef VTK_DICOM_DELETE
-  vtkDICOMParser(const vtkDICOMParser&) VTK_DICOM_DELETE;
-  void operator=(const vtkDICOMParser&) VTK_DICOM_DELETE;
-#else
   vtkDICOMParser(const vtkDICOMParser&) = delete;
   void operator=(const vtkDICOMParser&) = delete;
-#endif
 };
 
 #endif /* vtkDICOMParser_h */

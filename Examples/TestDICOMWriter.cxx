@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -21,6 +21,7 @@
 #include "vtkSmartPointer.h"
 #include "vtkStringArray.h"
 
+#include <iostream>
 #include <sstream>
 
 #include <string.h>
@@ -53,12 +54,12 @@ int main(int argc, char *argv[])
   int m = sorter->GetNumberOfStudies();
   for (int j = 0; j < m; j++)
   {
-    cout << "Study" << j << ":\n";
+    std::cout << "Study" << j << ":\n";
     int k = sorter->GetFirstSeriesForStudy(j);
     int kl = sorter->GetLastSeriesForStudy(j);
     for (; k <= kl; k++)
     {
-      cout << "  Series " << k << ":\n";
+      std::cout << "  Series " << k << ":\n";
       vtkStringArray *a = sorter->GetFileNamesForSeries(k);
 
       vtkSmartPointer<vtkDICOMReader> reader =

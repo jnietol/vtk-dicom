@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -165,6 +165,9 @@ public:
     return (this->L ? this->L->NumberOfDataElements : 0); }
 
   //! Get an iterator for the list of data elements.
+  /*!
+   *  The iterator is only valid until the next modification of the data set.
+   */
   vtkDICOMDataElementIterator Begin() const {
     return (this->L ? this->L->Head.Next : nullptr); }
 
@@ -194,6 +197,8 @@ public:
    *  resolve private tags that you plan to write to the data set.  The
    *  returned tag will be (ffff,ffff) if there are no empty slots available
    *  for the creator.  Every private group has 240 available slots.
+   *  If the private tag (gggg,xxee) has a non-zero value for xx, then
+   *  element (gggg,00xx) will be used for the creator if it is available.
    */
   vtkDICOMTag ResolvePrivateTagForWriting(
     vtkDICOMTag ptag, const std::string& creator);

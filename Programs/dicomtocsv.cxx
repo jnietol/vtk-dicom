@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -60,7 +60,7 @@ void dicomtocsv_version(FILE *file, const char *cp)
 {
   fprintf(file, "%s %s\n", cp, DICOM_VERSION);
   fprintf(file, "\n"
-    "Copyright (c) 2012-2024, David Gobbi.\n\n"
+    "Copyright (c) 2012-2025, David Gobbi.\n\n"
     "This software is distributed under an open-source license.  See the\n"
     "Copyright.txt file that comes with the vtk-dicom source distribution.\n");
 }
@@ -84,6 +84,7 @@ void dicomtocsv_usage(FILE *file, const char *cp)
     "  --directory-only  Do not scan files if DICOMDIR is present.\n"
     "  --ignore-dicomdir Ignore the DICOMDIR file even if it is present.\n"
     "  --charset <cs>    Charset to use if SpecificCharacterSet is missing.\n"
+    "  --force-charset <cs> Force override of SpecificCharacterSet with <cs>.\n"
     "  --images-only     Only list files that have PixelData or equivalent.\n"
     "  --noheader        Do not print the csv header.\n"
     "  --study           Print one row for each study.\n"
@@ -145,12 +146,23 @@ bool dicomtocsv_same_orientation(const vtkDICOMValue& ov1,
   {
     return true;
   }
+  // if one has orientation info and other does not
+  if (ov1.IsValid() != ov2.IsValid())
+  {
+    return false;
+  }
 
   // do a numerical check with tolerance
   double o1[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
   double o2[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-  ov1.GetValues(o1, 6);
-  ov2.GetValues(o2, 6);
+  if (ov1.IsValid())
+  {
+    ov1.GetValues(o1, 6);
+  }
+  if (ov2.IsValid())
+  {
+    ov2.GetValues(o2, 6);
+  }
 
   // check the row and column orientation vectors
   for (int i = 0; i < 2; i++)
@@ -189,8 +201,7 @@ public:
   static ErrorObserver *New() { return new ErrorObserver(); }
   vtkTypeMacro(ErrorObserver,vtkCommand);
   void Execute(
-    vtkObject *caller, unsigned long eventId, void *callData)
-    VTK_DICOM_OVERRIDE;
+    vtkObject *caller, unsigned long eventId, void *callData) override;
   void SetMetaData(vtkDICOMMetaData *meta) { this->MetaData = meta; }
 protected:
   ErrorObserver() : MetaData(nullptr) {}
@@ -363,11 +374,18 @@ void dicomtocsv_writeheader(
     {
       vtkDICOMTag tag = tagPath.GetHead();
       vtkDICOMDictEntry e = pitem->FindDictEntry(tag);
+      const char* name = nullptr;
       if (e.IsValid())
       {
-        const char *name = e.GetName();
-        name = ((name && name[0]) ? name : "Unknown");
+        name = e.GetName();
+      }
+      if (name && name[0])
+      {
         fprintf(fp, "%s", name);
+      }
+      else
+      {
+        fprintf(fp, "%s", "Unknown");
       }
       if (!tagPath.HasTail())
       {
@@ -690,18 +708,21 @@ void dicomtocsv_write(vtkDICOMDirectory *finder,
               const vtkDICOMItem *mitem = top.m++;
 
               vtkDICOMTag tag = tpath.GetHead();
-              std::string creator;
               if ((tag.GetGroup() & 0x0001) == 1)
               {
                 vtkDICOMTag ctag(tag.GetGroup(), tag.GetElement() >> 8);
-                creator = qitem->Get(ctag).AsString();
-                if (mitem)
+                const vtkDICOMValue& creatorValue = qitem->Get(ctag);
+                if (creatorValue.IsValid())
                 {
-                  tag = mitem->ResolvePrivateTag(tag, creator);
-                }
-                else
-                {
-                  tag = adapter->ResolvePrivateTag(tag, creator);
+                  std::string creator = creatorValue.AsString();
+                  if (mitem)
+                  {
+                    tag = mitem->ResolvePrivateTag(tag, creator);
+                  }
+                  else
+                  {
+                    tag = adapter->ResolvePrivateTag(tag, creator);
+                  }
                 }
               }
               const vtkDICOMValue *vptr = nullptr;
@@ -875,6 +896,7 @@ int MAINMACRO(int argc, char *argv[])
   bool onlyDicomdir = false;
   bool ignoreDicomdir = false;
   vtkDICOMCharacterSet charset;
+  bool forceCharset = false;
   bool imagesOnly = false;
   bool noHeader = false;
   bool silent = false;
@@ -1030,7 +1052,8 @@ int MAINMACRO(int argc, char *argv[])
     {
       ignoreDicomdir = true;
     }
-    else if (strcmp(arg, "--charset") == 0)
+    else if (strcmp(arg, "--charset") == 0 ||
+             strcmp(arg, "--force-charset") == 0)
     {
       ++argi;
       if (argi == argc || argv[argi][0] == '-')
@@ -1038,6 +1061,10 @@ int MAINMACRO(int argc, char *argv[])
         fprintf(stderr, "%s must be followed by a valid character set\n\n",
                 arg);
         return 1;
+      }
+      if (strncmp(arg, "--force-", 8) == 0)
+      {
+        forceCharset = true;
       }
       charset = vtkDICOMCharacterSet(argv[argi]);
       if (charset.GetKey() == vtkDICOMCharacterSet::Unknown)
@@ -1146,6 +1173,7 @@ int MAINMACRO(int argc, char *argv[])
 
     // Set the default character set
     vtkDICOMCharacterSet::SetGlobalDefault(charset);
+    vtkDICOMCharacterSet::SetGlobalOverride(forceCharset);
 
     vtkSmartPointer<vtkDICOMDirectory> finder =
       vtkSmartPointer<vtkDICOMDirectory>::New();

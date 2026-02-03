@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -54,6 +54,15 @@ bool dicomcli_looks_like_key(const char *key);
  */
 bool dicomcli_readuids(
   const char *fname, vtkDICOMItem *query, QueryTagList *ql=nullptr);
+
+//! Resolve a query tag to a specific data set.
+/*!
+ *  When a query contains private attributes, those attributes must be
+ *  resolved to the dataset that is queried, since the query and the
+ *  dataset might use different private blocks for those attributes.
+ */
+vtkDICOMTagPath dicomcli_resolve_tagpath(vtkDICOMMetaData* meta, int i,
+  const vtkDICOMTagPath& tpath, const vtkDICOMItem *query);
 
 //! Print brief info about a file for error messages.
 /*!

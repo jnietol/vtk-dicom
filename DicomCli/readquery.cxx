@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -405,13 +405,10 @@ bool dicomcli_readkey_query(
     }
   }
 
+  // if no dictionary VR, use UT to hold raw text
   if (!vr.IsValid() || vr == VR::UN)
   {
-    int m = static_cast<int>(s - lineStart);
-    m = (m > maxerrlen ? maxerrlen : m);
-    fprintf(stderr, "Error: Unrecognized DICOM tag \"%*.*s\"\n",
-            m, m, &cp[lineStart]);
-    return false;
+    vr = VR::UT;
   }
 
   // check for a value or pattern following "="
@@ -687,6 +684,75 @@ bool dicomcli_readuids(
   }
 
   return (f.GetError() == 0);
+}
+
+vtkDICOMTagPath dicomcli_resolve_tagpath(vtkDICOMMetaData* meta, int i,
+  const vtkDICOMTagPath& tpath, const vtkDICOMItem *query)
+{
+  // the output path (will be resolved to the "meta" dataset)
+  vtkDICOMTagPath mpath;
+  // for nesting within "meta" dataset and "query" dataset
+  const vtkDICOMItem *mitem = nullptr;
+  const vtkDICOMItem *qitem = query;
+
+  for (unsigned int depth = 0; depth < tpath.GetSize(); depth++)
+  {
+    vtkDICOMTag qtag = tpath.GetTag(depth);
+    vtkDICOMTag mtag = qtag;
+    if ((qtag.GetGroup() & 0x0001) == 1)
+    {
+      vtkDICOMTag ctag(qtag.GetGroup(), qtag.GetElement() >> 8);
+      const vtkDICOMValue& creatorValue = qitem->Get(ctag);
+      if (creatorValue.IsValid())
+      {
+        std::string creator = creatorValue.AsString();
+        if (depth == 0)
+        {
+          mtag = meta->ResolvePrivateTag(i, qtag, creator);
+        }
+        else if (mitem)
+        {
+          mtag = mitem->ResolvePrivateTag(qtag, creator);
+        }
+      }
+    }
+    if (depth == 0)
+    {
+      mpath = vtkDICOMTagPath(mtag);
+    }
+    else
+    {
+      mpath = vtkDICOMTagPath(mpath, 0, mtag);
+    }
+
+    if (depth + 1 < tpath.GetSize())
+    {
+      const vtkDICOMValue *vptr = nullptr;
+      if (depth == 0)
+      {
+        vptr = &meta->Get(i, mtag);
+      }
+      else if (mitem)
+      {
+        vptr = &mitem->Get(mtag);
+      }
+      if (vptr && vptr->IsValid())
+      {
+        // go one level deeper into the meta data
+        if (vptr->GetNumberOfValues() > 0)
+        {
+          mitem = vptr->GetSequenceData();
+        }
+      }
+      // go one level deeper into the query
+      if (qitem && qitem->Get(qtag).GetNumberOfValues() > 0)
+      {
+        qitem = qitem->Get(qtag).GetSequenceData();
+      }
+    }
+  }
+
+  return mpath;
 }
 
 void dicomcli_error_helper(vtkDICOMMetaData *meta, int i)

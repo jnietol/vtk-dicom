@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -292,7 +292,7 @@ public:
   static vtkDICOMErrorSilencer *New() { return new vtkDICOMErrorSilencer; }
   vtkTypeMacro(vtkDICOMErrorSilencer,vtkCommand);
   void Execute(vtkObject *caller, unsigned long eventId, void *callData)
-    VTK_DICOM_OVERRIDE;
+    override;
 protected:
   vtkDICOMErrorSilencer() {};
   vtkDICOMErrorSilencer(const vtkDICOMErrorSilencer& c) : vtkCommand(c) {}
@@ -1910,12 +1910,20 @@ bool vtkDICOMReader::ReadOneFile(
 }
 
 //----------------------------------------------------------------------------
-void vtkDICOMReader::Update()
+vtkDICOMAlgorithm::UpdateReturnType vtkDICOMReader::Update()
 {
   // if user didn't specify a port, also update the overlay if present
   this->UpdateOverlayFlag = true;
+#ifdef VTK_DICOM_UPDATE_RETURNS_BOOL
+  bool rval = this->Superclass::Update();
+#else
   this->Superclass::Update();
+#endif
   this->UpdateOverlayFlag = false;
+
+#ifdef VTK_DICOM_UPDATE_RETURNS_BOOL
+  return rval;
+#endif
 }
 
 //----------------------------------------------------------------------------

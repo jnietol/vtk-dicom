@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -25,6 +25,7 @@
 #include <ctype.h>
 #include <assert.h>
 
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -372,9 +373,11 @@ public:
   // Get the VL of the last data element.
   unsigned int GetLastVL() { return this->LastVL; }
 
-  // Check for attributes missing from this instance, that were present
-  // for instances in the series that were already parsed.
-  void HandleMissingAttributes(vtkDICOMTag tag);
+  // Prepare this decoder for the use of SetIndexed().
+  void PrepareForSetIndexed();
+
+  // Set element for one particular instance, identified by index.
+  void SetIndexed(int idx, vtkDICOMTag tag, const vtkDICOMValue& v);
 
   // Advance the query iterator (this->Query) to the given tag,
   // and set this->QueryMatched to false if any unmatched query keys
@@ -436,8 +439,8 @@ protected:
   vtkDICOMTag LastTag;
   vtkDICOMVR  LastVR;
   unsigned int LastVL;
-  // this is set to the last tag written to this->MetaData
-  vtkDICOMTag LastWrittenTag;
+  // this is to track elements written by SetIndexed;
+  vtkDICOMTag LastTagForSetIndexed;
 };
 
 //----------------------------------------------------------------------------
@@ -484,7 +487,7 @@ public:
   // the first element that is not in the specified group.
   bool ReadElements(
     const unsigned char* &cp, const unsigned char* &ep,
-    unsigned int l, vtkDICOMTag delimiter) VTK_DICOM_OVERRIDE
+    unsigned int l, vtkDICOMTag delimiter) override
   {
     size_t bytesRead;
     return ReadElements(cp, ep, l, delimiter, bytesRead);
@@ -497,7 +500,7 @@ public:
   // the first element that is not in the specified group.
   bool SkipElements(
     const unsigned char* &cp, const unsigned char* &ep,
-    unsigned int l, vtkDICOMTag delimiter) VTK_DICOM_OVERRIDE
+    unsigned int l, vtkDICOMTag delimiter) override
   {
     return SkipElements(cp, ep, l, delimiter, nullptr);
   }
@@ -535,7 +538,7 @@ public:
 
   // Peek ahead to see what the next element is.
   vtkDICOMTag Peek(
-    const unsigned char* &cp, const unsigned char* &ep) VTK_DICOM_OVERRIDE
+    const unsigned char* &cp, const unsigned char* &ep) override
   {
     unsigned short g = 0;
     unsigned short e = 0;
@@ -700,24 +703,40 @@ inline size_t DecoderBase::GetByteOffset(
 }
 
 //----------------------------------------------------------------------------
-void DecoderBase::HandleMissingAttributes(vtkDICOMTag tag)
+void DecoderBase::PrepareForSetIndexed()
 {
-  // insert null values for any attributes that were present for other
-  // instances in this series but not present for this instance
-  vtkDICOMDataElementIterator iter = this->MetaData->Find(tag);
-  --iter;
-  if (iter->GetTag() != this->LastWrittenTag &&
-      iter->GetTag().GetGroup() != 0x0002)
+  vtkDICOMMetaData *data = this->MetaData;
+  vtkDICOMDataElementIterator iter = data->Begin();
+  while (iter != data->End() && iter->GetTag().GetGroup() <= 0x0002)
   {
-    int count = 0;
-    do
-    {
-      count++;
-      --iter;
-    }
-    while (iter->GetTag() != this->LastWrittenTag &&
-           iter->GetTag().GetGroup() != 0x0002);
+    ++iter;
+  }
+  // note: if 'iter' is still 'data->Begin()', then this will set the
+  // position to be 'data->Head' (see vtkDICOMMetaData.h/.cxx)
+  this->LastTagForSetIndexed = (--iter)->GetTag();
+}
 
+//----------------------------------------------------------------------------
+void DecoderBase::SetIndexed(
+  int idx, vtkDICOMTag tag, const vtkDICOMValue& v)
+{
+  vtkDICOMDataElementIterator iter =
+    this->MetaData->InsertOrAssign(idx, tag, v);
+  vtkDICOMTag lastTag = this->LastTagForSetIndexed;
+  this->LastTagForSetIndexed = tag;
+
+  // check for a gap between the last data element and the current one
+  int count = 0;
+  while ((--iter)->GetTag() > lastTag)
+  {
+    count++;
+  }
+
+  // if there is a gap betwen the previous element and the new one, then
+  // other instances had data elements that are missing for this 'idx',
+  // so set these missing elements to null values
+  if (count > 0)
+  {
     vtkDICOMTag *missing = new vtkDICOMTag[count];
     for (int i = 0; i < count; i++)
     {
@@ -729,7 +748,6 @@ void DecoderBase::HandleMissingAttributes(vtkDICOMTag tag)
     }
     delete [] missing;
   }
-  this->LastWrittenTag = tag;
 }
 
 //----------------------------------------------------------------------------
@@ -844,10 +862,14 @@ bool DecoderBase::QueryContains(vtkDICOMTag tag)
     return false;
   }
 
-  // if this is a creator element (e is 0x00XX), return true
+  // if this is a creator element, return true if any creators in query
   if (e >= 0x0010 && e <= 0x00FF)
   {
-    return true;
+    if (iter != this->QueryEnd && iter->GetTag() <= vtkDICOMTag(g, 0x00FF))
+    {
+      return true;
+    }
+    return false;
   }
 
   // search for the creator element within the query
@@ -855,21 +877,29 @@ bool DecoderBase::QueryContains(vtkDICOMTag tag)
   vtkDICOMValue creator = this->Context->Get(ctag);
   if (creator.IsValid())
   {
+    bool needcreator = false;
     // maximum possible creator element is (gggg,00FF)
     gtag = vtkDICOMTag(g, 0x00FF);
     while (iter != this->QueryEnd && iter->GetTag() <= gtag)
     {
       if (iter->GetValue().Matches(creator))
       {
+        // resolve the tag using the creator found in the query
         tag = vtkDICOMTag(
           g, (iter->GetTag().GetElement() << 8) | (e & 0x00FF));
         break;
       }
+      if (iter->GetTag() == ctag)
+      {
+        // if the private tag we're querying has a creator, it must match
+        // the creator that we're looking for in this loop
+        needcreator = true;
+      }
       ++iter;
     }
-    // if creator not found in query, tag obviously won't be found
-    if (iter == this->QueryEnd || iter->GetTag() > gtag)
+    if (needcreator && (iter == this->QueryEnd || iter->GetTag() > gtag))
     {
+      // we needed to resolve the tag, but couldn't find the creator
       return false;
     }
   }
@@ -1620,18 +1650,17 @@ bool Decoder<E>::ReadElements(
     }
     else
     {
-      this->MetaData->Set(this->Index, tag, v);
-      this->HandleMissingAttributes(tag);
+      this->SetIndexed(this->Index, tag, v);
     }
 
     /*
-    cout << tag << " " << vr << " " << vl << " " << v;
+    std::cout << tag << " " << vr << " " << vl << " " << v;
     vtkDICOMDictEntry entry;
     if (this->MetaData->FindDictEntry(tag, entry))
       {
-      cout << " \"" << entry.GetName() << "\"";
+      std::cout << " \"" << entry.GetName() << "\"";
       }
-    cout << "\n";
+    std::cout << "\n";
     */
 
     // check if the value matches the query
@@ -2109,6 +2138,12 @@ bool vtkDICOMParser::ReadMetaData(
     decoder = &decoderBE;
   }
 
+  // Initialization required for use of SetIndexed method
+  if (meta && idx >= 0)
+  {
+    decoder->PrepareForSetIndexed();
+  }
+
   // get the Query
   vtkDICOMDataElementIterator iter;
   vtkDICOMDataElementIterator iterEnd;
@@ -2290,8 +2325,7 @@ bool vtkDICOMParser::ReadMetaData(
 
         if (idx >= 0)
         {
-          meta->Set(idx, lastTag, vtkDICOMValue(lastVR));
-          decoder->HandleMissingAttributes(lastTag);
+          decoder->SetIndexed(idx, lastTag, vtkDICOMValue(lastVR));
         }
         else
         {

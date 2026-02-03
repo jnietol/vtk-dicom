@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -16,7 +16,6 @@
 
 #include "vtkObject.h"
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 
 // Declare VTK classes within VTK's optional namespace
 #if defined(VTK_ABI_NAMESPACE_BEGIN)
@@ -44,7 +43,7 @@ class VTKDICOM_EXPORT vtkDICOMFileSorter : public vtkObject
 {
 public:
   vtkTypeMacro(vtkDICOMFileSorter,vtkObject);
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
   static vtkDICOMFileSorter *New();
 
   //@{
@@ -120,7 +119,7 @@ public:
 
 protected:
   vtkDICOMFileSorter();
-  ~vtkDICOMFileSorter() VTK_DICOM_OVERRIDE;
+  ~vtkDICOMFileSorter() override;
 
   const char *InputFileName;
   vtkStringArray *InputFileNames;
@@ -158,13 +157,8 @@ protected:
   void SetErrorCode(unsigned long e) { this->ErrorCode = e; }
 
 private:
-#ifdef VTK_DICOM_DELETE
-  vtkDICOMFileSorter(const vtkDICOMFileSorter&) VTK_DICOM_DELETE;
-  void operator=(const vtkDICOMFileSorter&) VTK_DICOM_DELETE;
-#else
   vtkDICOMFileSorter(const vtkDICOMFileSorter&) = delete;
   void operator=(const vtkDICOMFileSorter&) = delete;
-#endif
 
   class StringArrayVector;
   struct FileInfo;

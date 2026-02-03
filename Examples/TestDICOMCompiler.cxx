@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -21,6 +21,8 @@
 #include "vtkStringArray.h"
 #include "vtkSmartPointer.h"
 #include "vtkTypeInt64Array.h"
+
+#include <iostream>
 
 #include <stdio.h>
 #include <string.h>

@@ -38,7 +38,6 @@
 
 #include "vtkObject.h"
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 
 struct nifti_1_header;
 struct nifti_2_header;
@@ -165,7 +164,7 @@ public:
   vtkTypeMacro(vtkNIFTIHeader, vtkObject);
 
   //! Print information about this object.
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   //@{
   //! Get the magic number for the NIFTI file as a null-terminated string.
@@ -370,7 +369,7 @@ public:
 
 protected:
   vtkNIFTIHeader();
-  ~vtkNIFTIHeader() VTK_DICOM_OVERRIDE;
+  ~vtkNIFTIHeader() override;
 
   char Magic[12];
   vtkTypeInt64 VoxOffset;
@@ -411,13 +410,9 @@ protected:
   void SetStringValue(char *x, const char *y, size_t n);
 
 private:
-#ifdef VTK_DICOM_DELETE
-  vtkNIFTIHeader(const vtkNIFTIHeader&) VTK_DICOM_DELETE;
-  void operator=(const vtkNIFTIHeader&) VTK_DICOM_DELETE;
-#else
   vtkNIFTIHeader(const vtkNIFTIHeader&) = delete;
   void operator=(const vtkNIFTIHeader&) = delete;
-#endif
 };
 
 #endif // vtkNIFTIHeader_h
+// VTK-HeaderTest-Exclude: ABINAMESPACE

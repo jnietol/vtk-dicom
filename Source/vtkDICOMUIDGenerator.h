@@ -2,7 +2,7 @@
 
   Program: DICOM for VTK
 
-  Copyright (c) 2012-2024 David Gobbi
+  Copyright (c) 2012-2025 David Gobbi
   All rights reserved.
   See Copyright.txt or http://dgobbi.github.io/bsd3.txt for details.
 
@@ -17,7 +17,6 @@
 #include "vtkObject.h"
 #include "vtkStdString.h" // For std::string
 #include "vtkDICOMModule.h" // For export macro
-#include "vtkDICOMConfig.h" // For configuration details
 #include "vtkDICOMTag.h" // For method parameter
 
 // Declare VTK classes within VTK's optional namespace
@@ -52,7 +51,7 @@ public:
   //@}
 
   //! Print information about this object.
-  void PrintSelf(ostream& os, vtkIndent indent) VTK_DICOM_OVERRIDE;
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   //@{
   //! Set a UID prefix to use when generating UIDs.
@@ -105,7 +104,7 @@ public:
 
 protected:
   vtkDICOMUIDGenerator();
-  ~vtkDICOMUIDGenerator() VTK_DICOM_OVERRIDE;
+  ~vtkDICOMUIDGenerator() override;
 
   char *UIDPrefix;
   char UIDPrefixStore[64];
@@ -114,13 +113,8 @@ protected:
 private:
   friend class vtkDICOMUIDGeneratorInitializer;
 
-#ifdef VTK_DICOM_DELETE
-  vtkDICOMUIDGenerator(const vtkDICOMUIDGenerator&) VTK_DICOM_DELETE;
-  void operator=(const vtkDICOMUIDGenerator&) VTK_DICOM_DELETE;
-#else
   vtkDICOMUIDGenerator(const vtkDICOMUIDGenerator&) = delete;
   void operator=(const vtkDICOMUIDGenerator&) = delete;
-#endif
 };
 
 //! @cond
@@ -135,17 +129,10 @@ public:
   vtkDICOMUIDGeneratorInitializer();
   ~vtkDICOMUIDGeneratorInitializer();
 private:
-#ifdef VTK_DICOM_DELETE
-  vtkDICOMUIDGeneratorInitializer(
-    const vtkDICOMUIDGeneratorInitializer&) VTK_DICOM_DELETE;
-  vtkDICOMUIDGeneratorInitializer& operator=(
-    const vtkDICOMUIDGeneratorInitializer&) VTK_DICOM_DELETE;
-#else
   vtkDICOMUIDGeneratorInitializer(
     const vtkDICOMUIDGeneratorInitializer&) = delete;
   vtkDICOMUIDGeneratorInitializer& operator=(
     const vtkDICOMUIDGeneratorInitializer&) = delete;
-#endif
 };
 
 static vtkDICOMUIDGeneratorInitializer vtkDICOMUIDGeneratorInitializerInstance;
